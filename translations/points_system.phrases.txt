@@ -114,7 +114,7 @@
 		"en"		"Pounced Survivor +{1} points"
 	}
 	
-	"Jockey"
+	"Jockey Ride"
 	{
 		"#format"	"{1:d}"
 		"en"		"Jockeyed Survivor +{1} points"

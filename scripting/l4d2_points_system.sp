@@ -2,7 +2,7 @@
 #include <sourcemod>
 #include <sdktools>
 
-#define PLUGIN_TITLE "1.6.6 Loquere"
+#define PLUGIN_TITLE "1.6.7 Loquere"
 
 #define MSGTAG "\x04[PS]\x01"
 
@@ -945,7 +945,7 @@ public Action:Event_Ride(Handle:event, const String:name[], bool:dontBroadcast)
 	{
 		if(GetConVarInt(IRide) <= 0) return;
 		points[attacker] += GetConVarInt(IRide);
-		if(GetConVarBool(Notifications)) PrintToChat(attacker, "%s %T", MSGTAG, "Jockey", LANG_SERVER, GetConVarInt(IRide));
+		if(GetConVarBool(Notifications)) PrintToChat(attacker, "%s %T", MSGTAG, "Jockey Ride", LANG_SERVER, GetConVarInt(IRide));
 	}
 }	
 
