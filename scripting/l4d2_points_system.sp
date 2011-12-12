@@ -6,7 +6,7 @@
 
 #define MSGTAG "\x04[PS]\x01"
 
-new Float:version = 1.66; //x.x.x isn't allowed only one decimal is allowed :(
+new Float:version = 1.67; //x.x.x isn't allowed only one decimal is allowed :(
 new String:modules[100][100];
 new registeredmodules;
 new Handle:Forward1 = INVALID_HANDLE;
