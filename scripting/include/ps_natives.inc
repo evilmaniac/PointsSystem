@@ -106,36 +106,36 @@ native PS_GetItem(client, String:dest[], maxlength);
 native PS_GetBought(client, String:dest[], maxlength);
 
 /**
- * Registers a module for points system
- *
- * @param modulename	String that contains the module to be registered's name
- * @return				false if successful true if already registered, true should never happen.
- */
- native bool:PS_RegisterModule(const String:modulename[]);
- 
- /**
- * Unregisters a module for points system
- *
- * @param modulename	String that contains the module to be unregistered's name
- * @return				none
- */
- native PS_UnregisterModule(const String:modulename[]);
- 
-  /**
- * Called when Points System is loaded
- *
- * @return				none
- */
- forward OnPSLoaded();
- 
-  /**
- * Called when Points System is unloaded
- *
- * @return				none
- */
- forward OnPSUnloaded();
- 
- public SharedPlugin:__pl_ps = 
+* Registers a module for points system
+*
+* @param modulename	String that contains the module to be registered's name
+* @return			false if successful true if already registered, true should never happen.
+*/
+native bool:PS_RegisterModule(const String:modulename[]);
+
+/**
+* Unregisters a module for points system
+*
+* @param modulename	String that contains the module to be unregistered's name
+* @return			none
+*/
+native PS_UnregisterModule(const String:modulename[]);
+
+/**
+* Called when Points System is loaded
+*
+* @return			none
+*/
+forward OnPSLoaded();
+
+/**
+* Called when Points System is unloaded
+*
+* @return			none
+*/
+forward OnPSUnloaded();
+
+public SharedPlugin:__pl_ps = 
 {
 	name = "ps_natives",
 	file = "l4d2_points_system.smx",

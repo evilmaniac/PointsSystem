@@ -148,6 +148,16 @@
 	"knife"
 	{
 		"en"	"Knife"
+	}
+
+	"hunting_knife"
+	{
+		"en"	"Knife"
+	}
+
+	"riotshield"
+	{
+		"en"	"Riot Shield"
 	}	
 
 	"baseball_bat"
