@@ -177,6 +177,11 @@ new Handle:ResetPoints = INVALID_HANDLE;
 new Handle:StartPoints = INVALID_HANDLE;
 new Handle:SpawnTries = INVALID_HANDLE;
 
+//stuffs
+new SendProp_IsAlive;
+new SendProp_IsGhost;
+new SendProp_LifeState;
+
 new bool:lateload = false;
 new bool:bFirstRun = true;
 
@@ -352,9 +357,12 @@ public OnPluginStart()
 	HookEvent("round_end", Event_REnd);
 	HookEvent("round_start", Event_RStart);
 	HookEvent("finale_win", Event_Finale);
+	SendProp_LifeState = FindSendPropInfo("CTerrorPlayer", "m_lifeState");
+	SendProp_IsAlive = FindSendPropInfo("CTransitioningPlayer", "m_isAlive");
+	SendProp_IsGhost = FindSendPropInfo("CTerrorPlayer", "m_isGhost");
 	AutoExecConfig(true, "l4d2_points_system");
 	if(!lateload) CreateTimer(0.5, PrecacheGuns);
-}
+}	
 
 public bool:FilterSurvivors(const String:pattern[], Handle:clients)
 {
@@ -1192,7 +1200,7 @@ public Action:Command_Heal(client, args)
 			}
 			else
 			{
-				ShowActivity2(client, MSGTAG2, "%t", "Give Health", "_s", target_name);
+				ShowActivity2(client, MSGTAG2, "%t", "Give Health", target_name);
 			}
 			
 			for (new i = 0; i < target_count; i++)
@@ -1244,7 +1252,7 @@ public Action:Command_Points(client, args)
 			}
 			else
 			{
-				ShowActivity2(client, MSGTAG2, "%t", "Give Points", amount, "_s", target_name);
+				ShowActivity2(client, MSGTAG2, "%t", "Give Points", amount, target_name);
 			}
 			
 			for (new i = 0; i < target_count; i++)
@@ -1293,7 +1301,7 @@ public Action:Command_SPoints(client, args)
 			}
 			else
 			{
-				ShowActivity2(client, MSGTAG2, "%t", "Set Points", "_s", target_name, amount);
+				ShowActivity2(client, MSGTAG2, "%t", "Set Points", target_name, amount);
 			}
 		
 			for (new i = 0; i < target_count; i++)
@@ -3192,7 +3200,11 @@ public MenuHandler_ConfirmI(Handle:menu, MenuAction:action, param1, param2)
 				}
 				else if(StrContains(item[param1], "z_spawn", false) != -1 && StrContains(item[param1], "mob", false) == -1)
 				{
-					new bool:bGhost[MAXPLAYERS], bool:bAlive[MAXPLAYERS], bool:bLifeState[MAXPLAYERS];
+					if(IsPlayerAlive(param1) || IsPlayerGhost(param1))
+					{
+						return;
+					}	
+					new bool:resetGhost[MaxClients+1], bool:resetAlive[MaxClients+1], bool:resetLifeState[MaxClients+1];
 					for(new i=1;i<=MaxClients;i++)
 					{
 						if(i == param1 || !IsClientInGame(i) || GetClientTeam(i) != 3 || IsFakeClient(i))
@@ -3202,14 +3214,14 @@ public MenuHandler_ConfirmI(Handle:menu, MenuAction:action, param1, param2)
 						
 						if(IsPlayerGhost(i))
 						{
-							bGhost[i] = true;
-							bAlive[i] = true;
+							resetGhost[i] = true;
+							resetAlive[i] = true;
 							SetPlayerGhost(i, false);
 							SetPlayerAlive(i, true);
 						}
 						else if(!IsPlayerAlive(i))
 						{
-							bLifeState[i] = true;
+							resetLifeState[i] = true;
 							SetPlayerLifeState(i, false);
 						}	
 					}
@@ -3240,9 +3252,9 @@ public MenuHandler_ConfirmI(Handle:menu, MenuAction:action, param1, param2)
 
 					for(new i=1;i<=MaxClients;i++)
 					{
-						if (bGhost[i]) SetPlayerGhost(i, true);
-						if (bAlive[i]) SetPlayerAlive(i, false);
-						if (bLifeState[i]) SetPlayerLifeState(i, true);
+						if (resetGhost[i]) SetPlayerGhost(i, true);
+						if (resetAlive[i]) SetPlayerAlive(i, false);
+						if (resetLifeState[i]) SetPlayerLifeState(i, true);
 					}
 					return;
 				}	
@@ -3259,20 +3271,21 @@ public MenuHandler_ConfirmI(Handle:menu, MenuAction:action, param1, param2)
 
 stock bool:IsPlayerGhost(client)
 {
-	return bool:GetEntProp(client, Prop_Send, "m_isGhost");
+	if(GetEntData(client, SendProp_IsGhost, 1)) return true;
+	return false;
 }
 
 stock SetPlayerLifeState(client, bool:lifestate)
 {
-	SetEntProp(client, Prop_Send, "m_lifeState", lifestate);
+	SetEntData(client, SendProp_LifeState, lifestate, 1);
 }
 
 stock SetPlayerAlive(client, bool:alive)
 {
-	SetEntProp(client, Prop_Send, "m_isAlive", alive);
+	SetEntData(client, SendProp_IsAlive, alive, 1, true);
 }
 
 stock SetPlayerGhost(client, bool:ghost)
 {
-	SetEntProp(client, Prop_Send, "m_isGhost", ghost);
+	SetEntData(client, SendProp_IsGhost, ghost, 1);
 }
