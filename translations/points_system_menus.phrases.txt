@@ -372,7 +372,7 @@
 
 	"Explosive Ammo Pack"
 	{
-		"en"	"Incendiary Ammo Pack"
+		"en"	"Explosive Ammo Pack"
 	}
 
 	"Incendiary Ammo Pack"

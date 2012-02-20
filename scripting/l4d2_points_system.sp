@@ -1989,7 +1989,7 @@ public MenuHandler_Melee(Handle:menu, MenuAction:action, param1, param2)
 			else if(StrEqual(item1, "riotshield", false))
 			{
 				item[param1] = "give riotshield";
-				cost[param1] = GetConVarInt(PointsKnife);
+				cost[param1] = GetConVarInt(PointsShield);
 			}
 			else if(StrEqual(item1, "fireaxe", false))
 			{
