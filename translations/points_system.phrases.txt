@@ -269,6 +269,11 @@
 		"#format"	"{1:d}"
 		"en"		"Cost: {1}"
 	}
+
+	"Spawn Failed"
+	{
+		"en"		"Failed to spawn!"
+	}
 	
 	"Modules"
 	{
