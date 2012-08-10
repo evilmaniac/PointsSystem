@@ -2,13 +2,13 @@
 #include <sourcemod>
 #include <sdktools>
 
-#define PLUGIN_TITLE "1.6.8 Loquere"
+#define PLUGIN_TITLE "1.6.9 Dimitte"
 
 #define MSGTAG "\x04[PS]\x01"
 #define MSGTAG2 "\x04[PS]\x01 "
 #define MODULES_SIZE 100
 
-new Float:version = 1.68; //x.x.x isn't allowed only one decimal is allowed :(
+new Float:version = 1.69; //x.x.x isn't allowed only one decimal is allowed :(
 
 new Handle:ModulesArray = INVALID_HANDLE;
 new Handle:Forward1 = INVALID_HANDLE;
@@ -195,22 +195,12 @@ public Plugin:myinfo =
 }
 
 public OnPluginStart()
-{
-	new String:game_name[128];
-	GetGameFolderName(game_name, sizeof(game_name));
-	if(!StrEqual(game_name, "left4dead2", false))
-	{
-		SetFailState("%T", "Game Check Fail", LANG_SERVER);
-	}	
+{	
 	ModulesArray = CreateArray(100);
 	if(ModulesArray == INVALID_HANDLE)
 	{
 		SetFailState("%T", "Modules Array Failure", LANG_SERVER);
 	}
-	LoadTranslations("core.phrases");
-	LoadTranslations("common.phrases");
-	LoadTranslations("points_system.phrases");
-	LoadTranslations("points_system_menus.phrases");
 	AddMultiTargetFilter("@survivors", FilterSurvivors, "all Survivor players", true);
 	AddMultiTargetFilter("@survivor", FilterSurvivors, "all Survivor players", true);
 	AddMultiTargetFilter("@s", FilterSurvivors, "all Survivor players", true);
@@ -280,7 +270,7 @@ public OnPluginStart()
 	SValueKillingSpree = CreateConVar("l4d2_points_cikill_value", "2", "How many points does killing a certain amount of infected earn", FCVAR_PLUGIN);
 	SNumberKill = CreateConVar("l4d2_points_cikills", "25", "How many kills you need to earn a killing spree bounty", FCVAR_PLUGIN);
 	SValueHeadSpree = CreateConVar("l4d2_points_headshots_value", "4", "How many points does killing a certain amount of infected with headshots earn", FCVAR_PLUGIN);
-	SNumberHead = CreateConVar("l4d2_points_headshots", "20", "How many kills you need to earn a killing spree bounty", FCVAR_PLUGIN);
+	SNumberHead = CreateConVar("l4d2_points_headshots", "20", "How many kills you need to earn a head hunter bonus", FCVAR_PLUGIN);
 	SSIKill = CreateConVar("l4d2_points_sikill", "1", "How many points does killing a special infected earn", FCVAR_PLUGIN);
 	STankKill = CreateConVar("l4d2_points_tankkill", "2", "How many points does killing a tank earn", FCVAR_PLUGIN);
 	SWitchKill = CreateConVar("l4d2_points_witchkill", "4", "How many points does killing a witch earn", FCVAR_PLUGIN);
@@ -413,6 +403,7 @@ stock DispatchAndRemove(const String:gun[])
 	if(IsValidEdict(ent))
 	{
 		DispatchSpawn(ent);
+		RemoveEdict(ent);
 		return true;
 	}
 	else return false;
@@ -421,9 +412,8 @@ stock DispatchAndRemove(const String:gun[])
 public OnAllPluginsLoaded()
 {
 	//forward
-	new Action:result;
 	Call_StartForward(Forward1);
-	Call_Finish(_:result);
+	Call_Finish();
 }	
 
 public OnConfigsExecuted()
@@ -457,6 +447,7 @@ public OnMapStart()
 
 public Action:CheckMelee(Handle:Timer)
 {
+	new mCounter;
 	for(new i=0;i<MAX_MELEE_LENGTH;i++)
 	{
 		Format(validmelee[i], sizeof(validmelee[]), "");
@@ -470,7 +461,7 @@ public Action:CheckMelee(Handle:Timer)
 		GetEntPropString(entity, Prop_Data, "m_ModelName", modelname, sizeof(modelname));
 		if(StrContains(modelname, "hunter", false) == -1)
 		{
-			Format(validmelee[i], sizeof(validmelee[]), meleelist[i]);
+			Format(validmelee[mCounter++], sizeof(validmelee[]), meleelist[i]);
 		}
 		RemoveEdict(entity);
 	}
@@ -502,6 +493,16 @@ public Action:ListModules(client, args)
 
 public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 {
+	new String:game_name[128];
+	GetGameFolderName(game_name, sizeof(game_name));
+	LoadTranslations("core.phrases");
+	LoadTranslations("common.phrases");
+	LoadTranslations("points_system.phrases");
+	LoadTranslations("points_system_menus.phrases");
+	if(!StrEqual(game_name, "left4dead2", false))
+	{
+		SetFailState("%T", "Game Check Fail", LANG_SERVER);
+	}
 	CreateNative("PS_GetVersion", PS_GetVersion);
 	CreateNative("PS_SetPoints", PS_SetPoints);
 	CreateNative("PS_SetItem", PS_SetItem);
@@ -1038,33 +1039,32 @@ public Action:Event_Hurt(Handle:event, const String:name[], bool:dontBroadcast)
 	if(attacker > 0 && client > 0 && !IsFakeClient(attacker) && GetClientTeam(attacker) == 3 && GetClientTeam(client) == 2 && IsAllowedGameMode() && GetConVarInt(Enable) == 1 && GetConVarInt(IHurt) > 0)
 	{
 		hurtcount[attacker]++;
-		//new String:weapon[64];
-		//GetEventString(event, "weapon", weapon, sizeof(weapon));
-		//PrintToChat(client, weapon);
-		if (GetEntProp(attacker, Prop_Send, "m_zombieClass") == 4 && !GetEntProp(attacker, Prop_Send, "m_isGhost") && hurtcount[attacker] >= 8)
+		new type = GetEventInt(event, "type");
+		//PrintToChat(attacker, "Damagetype: %d", type);
+		if( (type == 263168 || type == 265216) && hurtcount[attacker] >= 8 )
 		{
 			if(GetConVarBool(Notifications)) PrintToChat(attacker, "%s %T", MSGTAG, "Spit Damage", LANG_SERVER, GetConVarInt(IHurt));
 			points[attacker] += GetConVarInt(IHurt);
 			hurtcount[attacker] -= 8;
-		}    
-		else if(GetEntProp(attacker, Prop_Send, "m_zombieClass") == 1 && !IsPlayerAlive(attacker))
+		} 
+		/*else if(GetEntProp(attacker, Prop_Send, "m_zombieClass") == 1 && !IsPlayerAlive(attacker))
 		{
 			if(FindConVar("l4d_cloud_damage_enabled") != INVALID_HANDLE)
 			{
 				if(GetConVarInt(FindConVar("l4d_cloud_damage_enabled")) == 1 && hurtcount[attacker] >= 8 && GetEntProp(attacker, Prop_Send, "m_isGhost") != 1)
 				{
-					if(GetConVarBool(Notifications)) PrintToChat(attacker, "%s %T", MSGTAG, "Cloud Damage", LANG_SERVER,GetConVarInt(IHurt));
+					if(GetConVarBool(Notifications)) PrintToChat(attacker, "%s %T", MSGTAG, "Cloud Damage", LANG_SERVER, GetConVarInt(IHurt));
 					points[attacker] += GetConVarInt(IHurt);
 					hurtcount[attacker] -= 10;
 				}
 			}	
-		}	
-		else if(hurtcount[attacker] >= 3)
+		}*/
+		else if(type != 263168 && type != 265216 && hurtcount[attacker] >= 3)
 		{
-			if(GetConVarBool(Notifications)) PrintToChat(attacker, "%s %T", MSGTAG, "Damage", LANG_SERVER,GetConVarInt(IHurt));
+			if(GetConVarBool(Notifications)) PrintToChat(attacker, "%s %T", MSGTAG, "Damage", LANG_SERVER, GetConVarInt(IHurt));
 			points[attacker] += GetConVarInt(IHurt);
 			hurtcount[attacker] -= 3;
-		}    
+		} 
 	}	
 }	
 
@@ -1194,14 +1194,7 @@ public Action:Command_Heal(client, args)
 		}
 		else
 		{
-			if (tn_is_ml)
-			{
-				ShowActivity2(client, MSGTAG2, "%t", "Give Health", target_name);
-			}
-			else
-			{
-				ShowActivity2(client, MSGTAG2, "%t", "Give Health", target_name);
-			}
+			ShowActivity2(client, MSGTAG2, "%t", "Give Health", target_name);
 			
 			for (new i = 0; i < target_count; i++)
 			{
@@ -1246,14 +1239,7 @@ public Action:Command_Points(client, args)
 		}
 		else
 		{
-			if (tn_is_ml)
-			{
-				ShowActivity2(client, MSGTAG2, "%t", "Give Points", amount, target_name);
-			}
-			else
-			{
-				ShowActivity2(client, MSGTAG2, "%t", "Give Points", amount, target_name);
-			}
+			ShowActivity2(client, MSGTAG2, "%t", "Give Points", amount, target_name);
 			
 			for (new i = 0; i < target_count; i++)
 			{
@@ -1295,14 +1281,7 @@ public Action:Command_SPoints(client, args)
 		}
 		else
 		{
-			if (tn_is_ml)
-			{
-				ShowActivity2(client, MSGTAG2, "%t", "Set Points", target_name, amount);
-			}
-			else
-			{
-				ShowActivity2(client, MSGTAG2, "%t", "Set Points", target_name, amount);
-			}
+			ShowActivity2(client, MSGTAG2, "%t", "Set Points", target_name, amount);
 		
 			for (new i = 0; i < target_count; i++)
 			{
