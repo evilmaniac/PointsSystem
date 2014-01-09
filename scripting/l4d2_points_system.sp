@@ -2,18 +2,20 @@
 #include <sourcemod>
 #include <sdktools>
 
-#define PLUGIN_TITLE "1.6.7 Loquere"
+#define PLUGIN_TITLE "1.6.9 Dimitte"
 
 #define MSGTAG "\x04[PS]\x01"
+#define MSGTAG2 "\x04[PS]\x01 "
+#define MODULES_SIZE 100
 
-new Float:version = 1.67; //x.x.x isn't allowed only one decimal is allowed :(
-new String:modules[100][100];
-new registeredmodules;
+new Float:version = 1.69; //x.x.x isn't allowed only one decimal is allowed :(
+
+new Handle:ModulesArray = INVALID_HANDLE;
 new Handle:Forward1 = INVALID_HANDLE;
 new Handle:Forward2 = INVALID_HANDLE;
 
 //melee check
-#define MAX_MELEE_LENGTH 11
+#define MAX_MELEE_LENGTH 13
 new String:meleelist[MAX_MELEE_LENGTH][20] =
 {
 	"cricket_bat",
@@ -26,7 +28,9 @@ new String:meleelist[MAX_MELEE_LENGTH][20] =
 	"tonfa",
 	"golfclub",
 	"machete",
-	"frying_pan"
+	"frying_pan",
+	"hunting_knife",
+	"riotshield"
 };
 new String:validmelee[MAX_MELEE_LENGTH][20];	
 
@@ -88,6 +92,7 @@ new Handle:PointsBat = INVALID_HANDLE;
 new Handle:PointsMachete = INVALID_HANDLE;
 new Handle:PointsKatana = INVALID_HANDLE;
 new Handle:PointsKnife = INVALID_HANDLE;
+new Handle:PointsShield = INVALID_HANDLE;
 new Handle:PointsTonfa = INVALID_HANDLE;
 new Handle:PointsFireaxe = INVALID_HANDLE;
 new Handle:PointsGuitar = INVALID_HANDLE;
@@ -170,8 +175,15 @@ new Handle:TankLimit = INVALID_HANDLE;
 new Handle:WitchLimit = INVALID_HANDLE;
 new Handle:ResetPoints = INVALID_HANDLE;
 new Handle:StartPoints = INVALID_HANDLE;
+new Handle:SpawnTries = INVALID_HANDLE;
+
+//stuffs
+new SendProp_IsAlive;
+new SendProp_IsGhost;
+new SendProp_LifeState;
 
 new bool:lateload = false;
+new bool:bFirstRun = true;
 
 public Plugin:myinfo = 
 {
@@ -183,21 +195,17 @@ public Plugin:myinfo =
 }
 
 public OnPluginStart()
-{
-	new String:game_name[128];
-	GetGameFolderName(game_name, sizeof(game_name));
-	if(!StrEqual(game_name, "left4dead2", false))
+{	
+	ModulesArray = CreateArray(100);
+	if(ModulesArray == INVALID_HANDLE)
 	{
-		SetFailState("This plugin only supports Left 4 Dead 2");
-	}	
-	LoadTranslations("common.phrases");
-	LoadTranslations("points_system.phrases");
-	LoadTranslations("points_system_menus.phrases");
-	AddMultiTargetFilter("@survivors", FilterSurvivors, "All Survivor players", false);
-	AddMultiTargetFilter("@survivor", FilterSurvivors, "All Survivor players", false);
-	AddMultiTargetFilter("@s", FilterSurvivors, "All Survivor players", false);
-	AddMultiTargetFilter("@infected", FilterInfected, "All Infected players", false);
-	AddMultiTargetFilter("@i", FilterInfected, "All Infected players", false);
+		SetFailState("%T", "Modules Array Failure", LANG_SERVER);
+	}
+	AddMultiTargetFilter("@survivors", FilterSurvivors, "all Survivor players", true);
+	AddMultiTargetFilter("@survivor", FilterSurvivors, "all Survivor players", true);
+	AddMultiTargetFilter("@s", FilterSurvivors, "all Survivor players", true);
+	AddMultiTargetFilter("@infected", FilterInfected, "all Infected players", true);
+	AddMultiTargetFilter("@i", FilterInfected, "all Infected players", true);
 	CreateConVar("l4d2_points_sys_version", PLUGIN_TITLE, "Version of Points System on this server.", FCVAR_PLUGIN|FCVAR_NOTIFY|FCVAR_DONTRECORD|FCVAR_REPLICATED);
 	StartPoints = CreateConVar("l4d2_points_start", "0", "Points to start each round/map with.", FCVAR_PLUGIN);
 	Notifications = CreateConVar("l4d2_points_notify", "1", "Show messages when points are earned?", FCVAR_PLUGIN);
@@ -206,6 +214,7 @@ public OnPluginStart()
 	ResetPoints = CreateConVar("l4d2_points_reset_mapchange", "versus,teamversus", "Which game modes to reset point count on round end and round start", FCVAR_PLUGIN);
 	TankLimit = CreateConVar("l4d2_points_tank_limit", "2", "How many tanks to be allowed spawned per team", FCVAR_PLUGIN);
 	WitchLimit = CreateConVar("l4d2_points_witch_limit", "3", "How many witchs' to be allwed spawned per team", FCVAR_PLUGIN);
+	SpawnTries = CreateConVar("l4d2_points_spawn_tries", "2", "How many times to attempt respawning when buying an special infected", FCVAR_PLUGIN);
 	PointsPistol = CreateConVar("l4d2_points_pistol", "4", "How many points the pistol costs", FCVAR_PLUGIN);
 	PointsSMG = CreateConVar("l4d2_points_smg", "7", "How many points the smg costs", FCVAR_PLUGIN);
 	PointsM16 = CreateConVar("l4d2_points_m16", "12", "How many points the m16 costs", FCVAR_PLUGIN);
@@ -235,6 +244,7 @@ public OnPluginStart()
 	PointsMachete = CreateConVar("l4d2_points_machete", "6", "How many points the machete costs", FCVAR_PLUGIN);
 	PointsKatana = CreateConVar("l4d2_points_katana", "6", "How many points the katana costs", FCVAR_PLUGIN);
 	PointsKnife = CreateConVar("l4d2_points_knife", "6", "How many points the knife costs", FCVAR_PLUGIN);
+	PointsShield = CreateConVar("l4d2_points_shield", "6", "How many points the shield costs", FCVAR_PLUGIN);
 	PointsTonfa = CreateConVar("l4d2_points_tonfa", "4", "How many points the tonfa costs", FCVAR_PLUGIN);
 	PointsFireaxe = CreateConVar("l4d2_points_fireaxe", "4", "How many points the fireaxe costs", FCVAR_PLUGIN);
 	PointsGuitar = CreateConVar("l4d2_points_guitar", "4", "How many points the guitar costs", FCVAR_PLUGIN);
@@ -260,7 +270,7 @@ public OnPluginStart()
 	SValueKillingSpree = CreateConVar("l4d2_points_cikill_value", "2", "How many points does killing a certain amount of infected earn", FCVAR_PLUGIN);
 	SNumberKill = CreateConVar("l4d2_points_cikills", "25", "How many kills you need to earn a killing spree bounty", FCVAR_PLUGIN);
 	SValueHeadSpree = CreateConVar("l4d2_points_headshots_value", "4", "How many points does killing a certain amount of infected with headshots earn", FCVAR_PLUGIN);
-	SNumberHead = CreateConVar("l4d2_points_headshots", "20", "How many kills you need to earn a killing spree bounty", FCVAR_PLUGIN);
+	SNumberHead = CreateConVar("l4d2_points_headshots", "20", "How many kills you need to earn a head hunter bonus", FCVAR_PLUGIN);
 	SSIKill = CreateConVar("l4d2_points_sikill", "1", "How many points does killing a special infected earn", FCVAR_PLUGIN);
 	STankKill = CreateConVar("l4d2_points_tankkill", "2", "How many points does killing a tank earn", FCVAR_PLUGIN);
 	SWitchKill = CreateConVar("l4d2_points_witchkill", "4", "How many points does killing a witch earn", FCVAR_PLUGIN);
@@ -308,15 +318,15 @@ public OnPluginStart()
 	CatMisc = CreateConVar("l4d2_points_cat_misc", "1", "Enable misc catergory", FCVAR_PLUGIN);
 	CatMelee = CreateConVar("l4d2_points_cat_melee", "1", "Enable melee catergory", FCVAR_PLUGIN);
 	CatWeapons = CreateConVar("l4d2_points_cat_weapons", "1", "Enable weapons catergory", FCVAR_PLUGIN);
-	RegConsoleCmd("sm_buystuff", BuyMenu);
-	RegConsoleCmd("sm_listmodules", ListModules);
-	RegConsoleCmd("sm_buy", BuyMenu);
-	RegConsoleCmd("sm_points", ShowPoints);
-	RegConsoleCmd("sm_listmelee", ListMelee);
+	RegConsoleCmd("sm_buystuff", BuyMenu, "Open the buy menu (only in-game)");
+	RegAdminCmd("sm_listmodules", ListModules, ADMFLAG_GENERIC, "List modules currently loaded to Points System");
+	RegConsoleCmd("sm_buy", BuyMenu, "Open the buy menu (only in-game)");
+	RegConsoleCmd("sm_points", ShowPoints, "Show the amount of points you have (only in-game)");
+	RegAdminCmd("sm_listmelee", ListMelee, ADMFLAG_GENERIC, "List melee weapons available on this map");
 	RegAdminCmd("sm_heal", Command_Heal, ADMFLAG_SLAY, "sm_heal <target>");
 	RegAdminCmd("sm_givepoints", Command_Points, ADMFLAG_SLAY, "sm_givepoints <target> [amount]");
 	RegAdminCmd("sm_setpoints", Command_SPoints, ADMFLAG_SLAY, "sm_setpoints <target> [amount]");
-	RegConsoleCmd("sm_repeatbuy", Command_RBuy);
+	RegConsoleCmd("sm_repeatbuy", Command_RBuy, "Repeat your last buy transaction");
 	HookEvent("infected_death", Event_Kill);
 	HookEvent("player_incapacitated", Event_Incap);
 	HookEvent("player_death", Event_Death);
@@ -337,9 +347,12 @@ public OnPluginStart()
 	HookEvent("round_end", Event_REnd);
 	HookEvent("round_start", Event_RStart);
 	HookEvent("finale_win", Event_Finale);
+	SendProp_LifeState = FindSendPropInfo("CTerrorPlayer", "m_lifeState");
+	SendProp_IsAlive = FindSendPropInfo("CTransitioningPlayer", "m_isAlive");
+	SendProp_IsGhost = FindSendPropInfo("CTerrorPlayer", "m_isGhost");
 	AutoExecConfig(true, "l4d2_points_system");
 	if(!lateload) CreateTimer(0.5, PrecacheGuns);
-}
+}	
 
 public bool:FilterSurvivors(const String:pattern[], Handle:clients)
 {
@@ -367,17 +380,21 @@ public bool:FilterInfected(const String:pattern[], Handle:clients)
 
 public Action:PrecacheGuns(Handle:Timer)
 {
+	new String:map[128];
+	GetCurrentMap(map, sizeof(map));
 	if(DispatchAndRemove("weapon_rifle_sg552") &&
 	DispatchAndRemove("weapon_smg_mp5") &&
 	DispatchAndRemove("weapon_sniper_awp") &&
 	DispatchAndRemove("weapon_sniper_scout") &&
 	DispatchAndRemove("weapon_rifle_m60"))
 	{
-		new String:map[128];
-		GetCurrentMap(map, sizeof(map));
 		ForceChangeLevel(map, "Initialize CS:S weapons");
 	}
-	else LogError("Plugin failed to initialize a CS:S weapon, consult developer!");
+	else
+	{
+		LogError("Plugin failed to initialize a CS:S weapon, consult developer!");
+		ForceChangeLevel(map, "Initialize CS:S weapons");
+	}	
 }
 
 stock DispatchAndRemove(const String:gun[])
@@ -386,6 +403,7 @@ stock DispatchAndRemove(const String:gun[])
 	if(IsValidEdict(ent))
 	{
 		DispatchSpawn(ent);
+		RemoveEdict(ent);
 		return true;
 	}
 	else return false;
@@ -394,9 +412,20 @@ stock DispatchAndRemove(const String:gun[])
 public OnAllPluginsLoaded()
 {
 	//forward
-	new Action:result;
 	Call_StartForward(Forward1);
-	Call_Finish(_:result);
+	Call_Finish();
+}	
+
+public OnConfigsExecuted()
+{
+	if(bFirstRun)
+	{
+		for(new i=0;i<=MaxClients;i++)
+		{
+			points[i] = GetConVarInt(StartPoints);
+		}
+		bFirstRun = false;
+	}
 }	
 
 public OnMapStart()
@@ -413,11 +442,12 @@ public OnMapStart()
 	PrecacheModel("models/infected/common_male_roadcrew.mdl", true);
 	PrecacheModel("models/infected/common_male_fallen_survivor.mdl", true);
 	GetCurrentMap(MapName, sizeof(MapName));
-	CreateTimer(10.0, CheckMelee, _, TIMER_FLAG_NO_MAPCHANGE);
+	CreateTimer(6.0, CheckMelee, _, TIMER_FLAG_NO_MAPCHANGE);
 }	
 
 public Action:CheckMelee(Handle:Timer)
 {
+	new mCounter;
 	for(new i=0;i<MAX_MELEE_LENGTH;i++)
 	{
 		Format(validmelee[i], sizeof(validmelee[]), "");
@@ -431,7 +461,7 @@ public Action:CheckMelee(Handle:Timer)
 		GetEntPropString(entity, Prop_Data, "m_ModelName", modelname, sizeof(modelname));
 		if(StrContains(modelname, "hunter", false) == -1)
 		{
-			Format(validmelee[i], sizeof(validmelee[]), meleelist[i]);
+			Format(validmelee[mCounter++], sizeof(validmelee[]), meleelist[i]);
 		}
 		RemoveEdict(entity);
 	}
@@ -442,7 +472,7 @@ public Action:ListMelee(client, args)
 	if(args > 0) return;
 	for(new i=0;i<MAX_MELEE_LENGTH;i++)
 	{
-		ReplyToCommand(client, validmelee[i]);	
+		if(strlen(validmelee[i]) > 0) ReplyToCommand(client, validmelee[i]);	
 	}	
 }	
 
@@ -450,9 +480,12 @@ public Action:ListModules(client, args)
 {
 	if(args > 0) return Plugin_Handled;
 	ReplyToCommand(client, "%s %T", MSGTAG, "Modules", LANG_SERVER);
-	for(new i=0; i<99; i++)
+	new size = GetArraySize(ModulesArray);
+	for(new i=0; i<size; i++)
 	{
-		if(strlen(modules[i]) > 0) ReplyToCommand(client, modules[i]);
+		decl String:buffer[MODULES_SIZE];
+		GetArrayString(ModulesArray, i, buffer, MODULES_SIZE);
+		if(strlen(buffer) > 0) ReplyToCommand(client, buffer);
 	}
 	ReplyToCommand(client, "%s %T", MSGTAG, "End...", LANG_SERVER);
 	return Plugin_Handled;
@@ -460,6 +493,16 @@ public Action:ListModules(client, args)
 
 public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 {
+	new String:game_name[128];
+	GetGameFolderName(game_name, sizeof(game_name));
+	LoadTranslations("core.phrases");
+	LoadTranslations("common.phrases");
+	LoadTranslations("points_system.phrases");
+	LoadTranslations("points_system_menus.phrases");
+	if(!StrEqual(game_name, "left4dead2", false))
+	{
+		SetFailState("%T", "Game Check Fail", LANG_SERVER);
+	}
 	CreateNative("PS_GetVersion", PS_GetVersion);
 	CreateNative("PS_SetPoints", PS_SetPoints);
 	CreateNative("PS_SetItem", PS_SetItem);
@@ -474,8 +517,8 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 	CreateNative("PS_GetBought", PS_GetBought);
 	CreateNative("PS_RegisterModule", PS_RegisterModule);
 	CreateNative("PS_UnregisterModule", PS_UnregisterModule);
-	Forward1 = CreateGlobalForward("OnPSLoaded", ET_Event);
-	Forward2 = CreateGlobalForward("OnPSUnloaded", ET_Event);
+	Forward1 = CreateGlobalForward("OnPSLoaded", ET_Ignore);
+	Forward2 = CreateGlobalForward("OnPSUnloaded", ET_Ignore);
 	RegPluginLibrary("ps_natives");
 	lateload = late;
 	return APLRes_Success;
@@ -490,46 +533,38 @@ public OnPluginEnd()
 
 public PS_RegisterModule(Handle:plugin, numParams)
 {
-	new String:test[100], bool:clone = false;
-	GetNativeString(1, test, sizeof(test));
-	for(new i=1; i<=99; i++)
+	new size = GetArraySize(ModulesArray);
+	decl String:test[MODULES_SIZE];
+	GetNativeString(1, test, MODULES_SIZE);
+	for(new i; i<size; i++)
 	{
-		if(StrEqual(modules[i], test))
+		decl String:buffer[MODULES_SIZE];
+		GetArrayString(ModulesArray, i, buffer, MODULES_SIZE);
+		if(StrEqual(buffer, test))
 		{
-			clone = true;
-			return clone;
+			return true;
 		}	
-	}	
-	if(registeredmodules == 0 && !clone)
-	{
-		GetNativeString(1, modules[0], 100);
-		registeredmodules++;
-		return clone;
-	}	
-	else if(!clone)
-	{
-		GetNativeString(1, modules[registeredmodules], 100);
-		registeredmodules++;
-		return clone;
 	}
-	return true;
+	PushArrayString(ModulesArray, test);
+	return false;
 }	
 
 public PS_UnregisterModule(Handle:plugin, numParams)
 {
-	new String:container[100];
-	GetNativeString(1, container, sizeof(container));
-	new bool:found = false;
-	for(new i=0; i <= 99; i++)
+	new size = GetArraySize(ModulesArray);
+	new String:container[MODULES_SIZE];
+	GetNativeString(1, container, MODULES_SIZE);
+	for(new i; i<size; i++)
 	{
-		if(found) break;
-		if(StrEqual(modules[i], container))
+		decl String:buffer[MODULES_SIZE];
+		GetArrayString(ModulesArray, i, buffer, MODULES_SIZE);
+		if(StrEqual(buffer, container))
 		{
-			found = true;
-			Format(modules[i], sizeof(modules), "");
+			RemoveFromArray(ModulesArray, i);
+			return true;
 		}
 	}
-	return found;
+	return false;
 }	
 
 public PS_GetVersion(Handle:plugin, numParams)
@@ -539,103 +574,72 @@ public PS_GetVersion(Handle:plugin, numParams)
 
 public PS_SetPoints(Handle:plugin, numParams)
 {
-	new client = GetNativeCell(1);
-	new newval = GetNativeCell(2);
-	points[client] = newval;
+	points[GetNativeCell(1)] = GetNativeCell(2);
 }	
 
 public PS_SetItem(Handle:plugin, numParams)
 {
-	new client = GetNativeCell(1);
-	GetNativeString(2, item[client], sizeof(item));
+	GetNativeString(2, item[GetNativeCell(1)], sizeof(item[]));
 }
 
 public PS_SetCost(Handle:plugin, numParams)
 {
-	new client = GetNativeCell(1);
-	new newval = GetNativeCell(2);
-	cost[client] = newval;
+	cost[GetNativeCell(1)] = GetNativeCell(2);
 }
 
 public PS_SetBought(Handle:plugin, numParams)
 {
-	new client = GetNativeCell(1);
-	GetNativeString(2, bought[client], sizeof(bought));
+	GetNativeString(2, bought[GetNativeCell(1)], sizeof(bought[]));
 }
 
 public PS_SetBoughtCost(Handle:plugin, numParams)
 {
-	new client = GetNativeCell(1);
-	new newval = GetNativeCell(2);
-	boughtcost[client] = newval;
+	boughtcost[GetNativeCell(1)] = GetNativeCell(2);
 }	
 
 public PS_SetupUMob(Handle:plugin, numParams)
 {
-	new newval = GetNativeCell(1);
-	ucommonleft = newval;
+	ucommonleft = GetNativeCell(1);
 }	
 
 public PS_GetPoints(Handle:plugin, numParams)
 {
-	new client = GetNativeCell(1);
-	return points[client];
+	return points[GetNativeCell(1)];
 }	
 
 public PS_GetCost(Handle:plugin, numParams)
 {
-	new client = GetNativeCell(1);
-	return cost[client];
+	return cost[GetNativeCell(1)];
 }	
 
 public PS_GetBoughtCost(Handle:plugin, numParams)
 {
-	new client = GetNativeCell(1);
-	return boughtcost[client];
+	return boughtcost[GetNativeCell(1)];
 }	
 
 public PS_GetItem(Handle:plugin, numParams)
 {
-	new client = GetNativeCell(1);
-	new maxlength = GetNativeCell(3);
-	SetNativeString(2, item[client], maxlength);
+	SetNativeString(2, item[GetNativeCell(1)], GetNativeCell(3));
 }
 
 public PS_GetBought(Handle:plugin, numParams)
 {
-	new client = GetNativeCell(1);
-	new maxlength = GetNativeCell(3);
-	SetNativeString(2, bought[client], maxlength);
+	SetNativeString(2, bought[GetNativeCell(1)], GetNativeCell(3));
 }
-
-public OnClientPutInServer(client)
-{
-	if(points[client] > GetConVarInt(StartPoints)) return;
-	points[client] = GetConVarInt(StartPoints);
-	if(killcount[client] > 0) return;
-	killcount[client] = 0;
-	wassmoker[client] = 0;
-	hurtcount[client] = 0;
-	protectcount[client] = 0;
-	headshotcount[client] = 0;
-}	
 
 public OnClientDisconnect(client)
 {
-	if(IsFakeClient(client)) return;
-	CreateTimer(5.0, Check, client);
-	if(points[client] > GetConVarInt(StartPoints)) return;
-	points[client] = GetConVarInt(StartPoints);
-	killcount[client] = 0;
-	wassmoker[client] = 0;
-	hurtcount[client] = 0;
-	protectcount[client] = 0;
-	headshotcount[client] = 0;
-}	
+	if(!IsFakeClient(client))
+	{
+		new userid = GetClientUserId(client);
+		CreateTimer(5.0, Check, userid);
+	}	
+}
 
-public Action:Check(Handle:Timer, any:client)
+public Action:Check(Handle:Timer, any:userid)
 {
-	if(!IsClientConnected(client))
+	new client = GetClientOfUserId(userid);
+	if(client == 0 || !IsClientConnected(client))
 	{
 		points[client] = GetConVarInt(StartPoints);
 		killcount[client] = 0;
@@ -666,9 +670,10 @@ public Action:Event_REnd(Handle:event, String:event_name[], bool:dontBroadcast)
 {
 	if(IsAllowedReset())
 	{
+		new startval = GetConVarInt(StartPoints);
 		for (new i=1; i<=MaxClients; i++)
 		{
-			points[i] = GetConVarInt(StartPoints);
+			points[i] = startval;
 			hurtcount[i] = 0;
 			protectcount[i] = 0;
 			headshotcount[i] = 0;
@@ -686,9 +691,10 @@ public Action:Event_RStart(Handle:event, String:event_name[], bool:dontBroadcast
 	if (!IsModelPrecached("models/v_models/v_m60.mdl")) PrecacheModel("models/v_models/v_m60.mdl");
 	if(IsAllowedReset())
 	{
+		new startval = GetConVarInt(StartPoints);
 		for (new i=1; i<=MaxClients; i++)
 		{
-			points[i] = GetConVarInt(StartPoints);
+			points[i] = startval;
 			hurtcount[i] = 0;
 			protectcount[i] = 0;
 			headshotcount[i] = 0;
@@ -704,10 +710,11 @@ public Action:Event_Finale(Handle:event, String:event_name[], bool:dontBroadcast
 {
 	new String:gamemode[40];
 	GetConVarString(FindConVar("mp_gamemode"), gamemode, sizeof(gamemode));
-	if(StrEqual(gamemode, "versus", false) || StrEqual(gamemode, "teamversus", false)) return;
+	if(StrContains(gamemode, "versus", false) != -1) return;
+	new startval = GetConVarInt(StartPoints);
 	for (new i=1; i<=MaxClients; i++)
 	{
-		points[i] = GetConVarInt(StartPoints);
+		points[i] = startval;
 		killcount[i] = 0;
 		hurtcount[i] = 0;
 		protectcount[i] = 0;
@@ -723,18 +730,24 @@ public Action:Event_Kill(Handle:event, const String:name[], bool:dontBroadcast)
 	ACHECK2
 	{
 		if(headshot) headshotcount[attacker]++;	
-		if(headshotcount[attacker] == GetConVarInt(SValueHeadSpree) && GetConVarInt(SValueHeadSpree) > 0)
+		new headpoints = GetConVarInt(SValueHeadSpree);
+		new heads = GetConVarInt(SNumberHead);
+		
+		if(headshotcount[attacker] == heads && headpoints > 0)
 		{
-			points[attacker] += GetConVarInt(SValueHeadSpree);
-			headshotcount[attacker] -= GetConVarInt(SNumberHead);
-			if(GetConVarBool(Notifications)) PrintToChat(attacker, "%s %T", MSGTAG, "Head Hunter", LANG_SERVER, GetConVarInt(SValueHeadSpree));
+			points[attacker] += headpoints;
+			headshotcount[attacker] -= heads;
+			if(GetConVarBool(Notifications)) PrintToChat(attacker, "%s %T", MSGTAG, "Head Hunter", LANG_SERVER, headpoints);
 		}
 		killcount[attacker]++;
-		if(killcount[attacker] == GetConVarInt(SNumberKill) && GetConVarInt(SValueKillingSpree) > 0)
+		
+		new spreepoints = GetConVarInt(SValueKillingSpree);
+		new kills = GetConVarInt(SNumberKill);
+		if(killcount[attacker] == kills && spreepoints > 0)
 		{
-			points[attacker] += GetConVarInt(SValueKillingSpree);
-			killcount[attacker] -= GetConVarInt(SNumberKill);
-			if(GetConVarBool(Notifications)) PrintToChat(attacker, "%s %T", MSGTAG, "Killing Spree", LANG_SERVER, GetConVarInt(SValueKillingSpree));
+			points[attacker] += spreepoints;
+			killcount[attacker] -= kills;
+			if(GetConVarBool(Notifications)) PrintToChat(attacker, "%s %T", MSGTAG, "Killing Spree", LANG_SERVER, spreepoints);
 		}
 	}	
 }	
@@ -744,9 +757,10 @@ public Action:Event_Incap(Handle:event, const String:name[], bool:dontBroadcast)
 	ATTACKER
 	ACHECK3
 	{
-		if(GetConVarInt(IIncap) <= 0) return;
-		points[attacker] += GetConVarInt(IIncap);
-		if(GetConVarBool(Notifications)) PrintToChat(attacker, "%s %T", MSGTAG, "Incapped Survivor", LANG_SERVER, GetConVarInt(IIncap));
+		new incappoints = GetConVarInt(IIncap);
+		if(incappoints <= 0) return;
+		points[attacker] += incappoints;
+		if(GetConVarBool(Notifications)) PrintToChat(attacker, "%s %T", MSGTAG, "Incapped Survivor", LANG_SERVER, incappoints);
 	}	
 }	
 
@@ -756,26 +770,30 @@ public Action:Event_Death(Handle:event, const String:name[], bool:dontBroadcast)
 	CLIENT
 	if(attacker > 0 && client > 0 && !IsFakeClient(attacker) && IsAllowedGameMode() && GetConVarInt(Enable) == 1)
 	{
+		new bool:notify = GetConVarBool(Notifications);
 		if(GetClientTeam(attacker) == 2)
 		{
-			if(GetConVarInt(SSIKill) < 1 || GetClientTeam(client) == 2) return;
-			if(GetEntProp(client, Prop_Send, "m_zombieClass") == 8) return;
+			new sipoints = GetConVarInt(SSIKill);
+			if(sipoints < 1 || GetClientTeam(client) == 2 || GetEntProp(client, Prop_Send, "m_zombieClass") == 8) return;
 			new bool:headshot = GetEventBool(event, "headshot");
 			if(headshot) headshotcount[attacker]++;
-			if(headshotcount[attacker] == GetConVarInt(SValueHeadSpree) && GetConVarInt(SValueHeadSpree) > 0)
+			new headsneeded = GetConVarInt(SNumberHead);
+			new headpoints = GetConVarInt(SValueHeadSpree);
+			if(headshotcount[attacker] == headsneeded && headpoints > 0)
 			{
-				points[attacker] += GetConVarInt(SValueHeadSpree);
-				headshotcount[attacker] -= GetConVarInt(SNumberHead);
-				if(GetConVarBool(Notifications)) PrintToChat(attacker, "%s %T", MSGTAG, "Head Hunter", LANG_SERVER, GetConVarInt(SValueHeadSpree));
+				points[attacker] += headpoints;
+				headshotcount[attacker] -= headsneeded;
+				if(notify) PrintToChat(attacker, "%s %T", MSGTAG, "Head Hunter", LANG_SERVER, headpoints);
 			}
-			points[attacker] += GetConVarInt(SSIKill);
-			if(GetConVarBool(Notifications)) PrintToChat(attacker, "%s %T", MSGTAG, "Killed SI", LANG_SERVER, GetConVarInt(SSIKill));
+			points[attacker] += sipoints;
+			if(notify) PrintToChat(attacker, "%s %T", MSGTAG, "Killed SI", LANG_SERVER, sipoints);
 		}
-		if(GetClientTeam(attacker) == 3)
+		else if(GetClientTeam(attacker) == 3)
 		{
-			if(GetConVarInt(IKill) < 1 || GetClientTeam(client) == 3) return;
-			points[attacker] += GetConVarInt(IKill);
-			if(GetConVarBool(Notifications)) PrintToChat(attacker, "%s %T", MSGTAG, "Killed Survivor", LANG_SERVER, GetConVarInt(IKill));
+			new killpoints = GetConVarInt(IKill);
+			if(killpoints < 1 || GetClientTeam(client) == 3) return;
+			points[attacker] += killpoints;
+			if(notify) PrintToChat(attacker, "%s %T", MSGTAG, "Killed Survivor", LANG_SERVER, killpoints);
 		}	
 	}	
 }	
@@ -786,18 +804,20 @@ public Action:Event_TankDeath(Handle:event, const String:name[], bool:dontBroadc
 	ATTACKER
 	ACHECK2
 	{
-		if(solo && GetConVarInt(STSolo) > 0)
+		new solopoints = GetConVarInt(STSolo);
+		if(solo && solopoints > 0)
 		{
-			points[attacker] += GetConVarInt(STSolo);
-			if(GetConVarBool(Notifications)) PrintToChat(attacker, "%s %T", MSGTAG, "TANK SOLO", LANG_SERVER, GetConVarInt(STSolo));
+			points[attacker] += solopoints;
+			if(GetConVarBool(Notifications)) PrintToChat(attacker, "%s %T", MSGTAG, "TANK SOLO", LANG_SERVER, solopoints);
 		}
 	}
+	new tankpoints = GetConVarInt(STankKill);
 	for (new i=1; i<=MaxClients; i++)
 	{
-		if(i && IsClientInGame(i)&& !IsFakeClient(i) && IsPlayerAlive(i) && GetClientTeam(i) == 2 && GetConVarInt(STankKill) > 0 && GetConVarInt(Enable) == 1 && IsAllowedGameMode())
+		if(i && IsClientInGame(i)&& !IsFakeClient(i) && IsPlayerAlive(i) && GetClientTeam(i) == 2 && tankpoints > 0 && GetConVarInt(Enable) == 1 && IsAllowedGameMode())
 		{
-			points[i] += GetConVarInt(STankKill);
-			if(GetConVarBool(Notifications)) PrintToChat(i, "%s %T", MSGTAG, "Killed Tank", LANG_SERVER, GetConVarInt(STankKill));
+			points[i] += tankpoints;
+			if(GetConVarBool(Notifications)) PrintToChat(i, "%s %T", MSGTAG, "Killed Tank", LANG_SERVER, tankpoints);
 		}	
 	}
 	tankburning[attacker] = 0;
@@ -810,14 +830,17 @@ public Action:Event_WitchDeath(Handle:event, const String:name[], bool:dontBroad
 	CLIENT
 	CCHECK2
 	{
-		if(GetConVarInt(SWitchKill) <= 0) return;
-		points[client] += GetConVarInt(SWitchKill);
-		if(GetConVarBool(Notifications)) PrintToChat(client, "%s %T", MSGTAG, "Killed Witch", LANG_SERVER, GetConVarInt(SWitchKill));
-		if(oneshot && GetConVarInt(SWitchCrown) > 0)
+		new witchpoints = GetConVarInt(SWitchKill);
+		if(witchpoints <= 0) return;
+		new notify = GetConVarBool(Notifications);
+		points[client] += witchpoints;
+		new crownpoints = GetConVarInt(SWitchCrown);
+		if(oneshot && crownpoints > 0)
 		{
-			points[client] += GetConVarInt(SWitchCrown);
-			if(GetConVarBool(Notifications)) PrintToChat(client, "%s %T", MSGTAG, "Crowned Witch", LANG_SERVER, GetConVarInt(SWitchCrown));
+			points[client] += crownpoints;
+			if(notify) PrintToChat(client, "%s %T", MSGTAG, "Crowned Witch", LANG_SERVER, crownpoints);
 		}	
+		if(notify) PrintToChat(client, "%s %T", MSGTAG, "Killed Witch", LANG_SERVER, witchpoints);
 	}
 	witchburning[client] = 0;
 }	
@@ -830,17 +853,20 @@ public Action:Event_Heal(Handle:event, const String:name[], bool:dontBroadcast)
 	if(subject > 0 && client > 0 && !IsFakeClient(client) && GetClientTeam(client) == 2 && IsAllowedGameMode() && GetConVarInt(Enable) == 1)
 	{
 		if(client == subject) return;
+		new notify = GetConVarBool(Notifications);
 		if(restored > 39)
 		{
-			if(GetConVarInt(SHeal) <= 0) return;
-			points[client] += GetConVarInt(SHeal);
-			if(GetConVarBool(Notifications)) PrintToChat(client, "%s %T", MSGTAG, "Team Heal", LANG_SERVER, GetConVarInt(SHeal));
+			new healpoints = GetConVarInt(SHeal);
+			if(healpoints <= 0) return;
+			points[client] += healpoints;
+			if(notify) PrintToChat(client, "%s %T", MSGTAG, "Team Heal", LANG_SERVER, healpoints);
 		}
 		else
 		{
-			if(GetConVarInt(SHealWarning) <= 0) return;
-			points[client] += GetConVarInt(SHealWarning);
-			if(GetConVarBool(Notifications)) PrintToChat(client, "%s %T", MSGTAG, "Team Heal Warning", LANG_SERVER, GetConVarInt(SHealWarning));
+			new healpoints = GetConVarInt(SHealWarning);
+			if(healpoints <= 0) return;
+			points[client] += healpoints;
+			if(notify) PrintToChat(client, "%s %T", MSGTAG, "Team Heal Warning", LANG_SERVER, healpoints);
 		}
 	}
 }	
@@ -851,14 +877,15 @@ public Action:Event_Protect(Handle:event, const String:name[], bool:dontBroadcas
 	new award = GetEventInt(event, "award");
 	if(client > 0 && award == 67 && GetConVarInt(SProtect) > 0 && IsClientInGame(client) && IsClientConnected(client) && GetClientTeam(client) > 1 && !IsFakeClient(client) && IsAllowedGameMode())
 	{
-		if(GetConVarInt(SProtect) <= 0) return;
+		new protectpoints = GetConVarInt(SProtect);
+		if(protectpoints <= 0) return;
 		protectcount[client]++;
 		if(protectcount[client] == 6)
 		{
-			points[client] += GetConVarInt(SProtect);
+			points[client] += protectpoints;
 			protectcount[client] = 0;
+			if(GetConVarBool(Notifications)) PrintToChat(client, "%s %T", MSGTAG, "Protect", LANG_SERVER, protectpoints);
 		}	
-		if(GetConVarBool(Notifications)) PrintToChat(client, "%s %T", MSGTAG, "Protect", LANG_SERVER, GetConVarInt(SProtect));
 	}
 }
 
@@ -870,17 +897,18 @@ public Action:Event_Revive(Handle:event, const String:name[], bool:dontBroadcast
 	CCHECK2
 	{
 		if(subject == client) return;
-		if(!ledge && GetConVarInt(SRevive) > 0)
+		new revivepoints = GetConVarInt(SRevive);
+		new ledgepoints = GetConVarInt(SLedge);
+		new notify = GetConVarBool(Notifications);
+		if(!ledge && revivepoints > 0)
 		{
-			points[client] += GetConVarInt(SRevive);
-			if(GetConVarBool(Notifications)) PrintToChat(client, "%s %T", MSGTAG, "Revive", LANG_SERVER, GetConVarInt(SRevive));
-			return;
+			points[client] += revivepoints;
+			if(notify) PrintToChat(client, "%s %T", MSGTAG, "Revive", LANG_SERVER, revivepoints);
 		}
-		if(ledge && GetConVarInt(SLedge) > 0)
+		else if(ledge && ledgepoints > 0)
 		{
-			points[client] += GetConVarInt(SLedge);
-			if(GetConVarBool(Notifications)) PrintToChat(client, "%s %T", MSGTAG, "Ledge Revive", LANG_SERVER, GetConVarInt(SLedge));
-			return;
+			points[client] += ledgepoints;
+			if(notify) PrintToChat(client, "%s %T", MSGTAG, "Ledge Revive", LANG_SERVER, ledgepoints);
 		}	
 	}
 }	
@@ -890,9 +918,10 @@ public Action:Event_Shock(Handle:event, const String:name[], bool:dontBroadcast)
 	CLIENT
 	CCHECK2
 	{
-		if(GetConVarInt(SDefib) <= 0) return;
-		points[client] += GetConVarInt(SDefib);
-		if(GetConVarBool(Notifications)) PrintToChat(client, "%s %T", MSGTAG, "Defib", LANG_SERVER, GetConVarInt(SDefib));
+		new defibpoints = GetConVarInt(SDefib);
+		if(defibpoints <= 0) return;
+		points[client] += defibpoints;
+		if(GetConVarBool(Notifications)) PrintToChat(client, "%s %T", MSGTAG, "Defib", LANG_SERVER, defibpoints);
 	}
 }	
 
@@ -901,9 +930,10 @@ public Action:Event_Choke(Handle:event, const String:name[], bool:dontBroadcast)
 	CLIENT
 	CCHECK3
 	{
-		if(GetConVarInt(IChoke) <= 0) return;
-		points[client] += GetConVarInt(IChoke);
-		if(GetConVarBool(Notifications)) PrintToChat(client, "%s %T", MSGTAG, "Smoke", LANG_SERVER, GetConVarInt(IChoke));
+		new chokepoints = GetConVarInt(IChoke);
+		if(chokepoints <= 0) return;
+		points[client] += chokepoints;
+		if(GetConVarBool(Notifications)) PrintToChat(client, "%s %T", MSGTAG, "Smoke", LANG_SERVER, chokepoints);
 	}
 }
 
@@ -913,15 +943,18 @@ public Action:Event_Boom(Handle:event, const String:name[], bool:dontBroadcast)
 	CLIENT
 	if(attacker > 0 && !IsFakeClient(attacker) && IsAllowedGameMode() && GetConVarInt(Enable) == 1)
 	{
-		if(GetClientTeam(attacker) == 3 && GetConVarInt(ITag) > 0)
+		new team = GetClientTeam(attacker);
+		new itag = GetConVarInt(ITag);
+		new stag = GetConVarInt(STag);
+		if(team == 3 && itag > 0)
 		{
-			points[attacker] += GetConVarInt(ITag);
-			if(GetClientTeam(client) == 2 && GetConVarBool(Notifications)) PrintToChat(attacker, "%s %T", MSGTAG, "Boom", LANG_SERVER, GetConVarInt(ITag));
+			points[attacker] += itag;
+			if(GetClientTeam(client) == 2 && GetConVarBool(Notifications)) PrintToChat(attacker, "%s %T", MSGTAG, "Boom", LANG_SERVER, itag);
 		}
-		if(GetClientTeam(attacker) == 2 && GetConVarInt(STag) > 0)
+		else if(team == 2 && stag > 0)
 		{
-			points[attacker] += GetConVarInt(STag);
-			if(GetClientTeam(client) == 3 && GetEntProp(client, Prop_Send, "m_zombieClass") == 8 && GetConVarBool(Notifications)) PrintToChat(attacker, "%s %T", MSGTAG, "Biled", LANG_SERVER, GetConVarInt(STag));
+			points[attacker] += stag;
+			if(GetClientTeam(client) == 3 && GetEntProp(client, Prop_Send, "m_zombieClass") == 8 && GetConVarBool(Notifications)) PrintToChat(attacker, "%s %T", MSGTAG, "Biled", LANG_SERVER, stag);
 			tankbiled[attacker] = 1;
 		}	
 	}
@@ -929,45 +962,49 @@ public Action:Event_Boom(Handle:event, const String:name[], bool:dontBroadcast)
 
 public Action:Event_Pounce(Handle:event, const String:name[], bool:dontBroadcast)
 {
-	ATTACKER
-	ACHECK3
+	CLIENT
+	CCHECK3
 	{
-		if(GetConVarInt(IPounce) <= 0) return;
-		points[attacker] += GetConVarInt(IPounce);
-		if(GetConVarBool(Notifications)) PrintToChat(attacker, "%s %T", MSGTAG, "Pounce", LANG_SERVER, GetConVarInt(IPounce));
+		new pouncepoints = GetConVarInt(IPounce);
+		if(pouncepoints <= 0) return;
+		points[client] += pouncepoints;
+		if(GetConVarBool(Notifications)) PrintToChat(client, "%s %T", MSGTAG, "Pounce", LANG_SERVER, pouncepoints);
 	}
 }	
 
 public Action:Event_Ride(Handle:event, const String:name[], bool:dontBroadcast)
 {
-	ATTACKER
-	ACHECK3
+	CLIENT
+	CCHECK3
 	{
-		if(GetConVarInt(IRide) <= 0) return;
-		points[attacker] += GetConVarInt(IRide);
-		if(GetConVarBool(Notifications)) PrintToChat(attacker, "%s %T", MSGTAG, "Jockey Ride", LANG_SERVER, GetConVarInt(IRide));
+		new ridepoints = GetConVarInt(IRide);
+		if(ridepoints <= 0) return;
+		points[client] += ridepoints;
+		if(GetConVarBool(Notifications)) PrintToChat(client, "%s %T", MSGTAG, "Jockey Ride", LANG_SERVER, ridepoints);
 	}
 }	
 
 public Action:Event_Carry(Handle:event, const String:name[], bool:dontBroadcast)
 {
-	ATTACKER
-	ACHECK3
+	CLIENT
+	CCHECK3
 	{
-		if(GetConVarInt(ICarry) <= 0) return;
-		points[attacker] += GetConVarInt(ICarry);
-		if(GetConVarBool(Notifications)) PrintToChat(attacker, "%s %T", MSGTAG, "Charge", LANG_SERVER, GetConVarInt(ICarry));
+		new carrypoints = GetConVarInt(ICarry);
+		if(carrypoints <= 0) return;
+		points[client] += carrypoints;
+		if(GetConVarBool(Notifications)) PrintToChat(client, "%s %T", MSGTAG, "Charge", LANG_SERVER, carrypoints);
 	}
 }	
 
 public Action:Event_Impact(Handle:event, const String:name[], bool:dontBroadcast)
 {
-	ATTACKER
-	ACHECK3
+	CLIENT
+	CCHECK3
 	{
-		if(GetConVarInt(IImpact) <= 0) return;
-		points[attacker] += GetConVarInt(IImpact);
-		if(GetConVarBool(Notifications)) PrintToChat(attacker, "%s %T", MSGTAG, "Charge Collateral", LANG_SERVER, GetConVarInt(IImpact));
+		new impactpoints = GetConVarInt(IImpact);
+		if(impactpoints <= 0) return;
+		points[client] += impactpoints;
+		if(GetConVarBool(Notifications)) PrintToChat(client, "%s %T", MSGTAG, "Charge Collateral", LANG_SERVER, impactpoints);
 	}
 }	
 
@@ -978,16 +1015,18 @@ public Action:Event_Burn(Handle:event, const String:name[], bool:dontBroadcast)
 	CLIENT
 	CCHECK2
 	{
-		if(StrEqual(victim, "Tank", false) && tankburning[client] == 0 && GetConVarInt(STBurn) > 0)
+		new tankpoints = GetConVarInt(STBurn);
+		new witchpoints = GetConVarInt(SWBurn);
+		if(StrEqual(victim, "Tank", false) && tankburning[client] == 0 && tankpoints > 0)
 		{
-			points[client] += GetConVarInt(STBurn);
-			if(GetConVarBool(Notifications)) PrintToChat(client, "%s %T", MSGTAG, "Burn Tank", LANG_SERVER, GetConVarInt(STBurn));
+			points[client] += tankpoints;
+			if(GetConVarBool(Notifications)) PrintToChat(client, "%s %T", MSGTAG, "Burn Tank", LANG_SERVER, tankpoints);
 			tankburning[client] = 1;
 		}
-		if(StrEqual(victim, "Witch", false) && witchburning[client] == 0 && GetConVarInt(SWBurn) > 0)
+		else if(StrEqual(victim, "Witch", false) && witchburning[client] == 0 && witchpoints > 0)
 		{
-			points[client] += GetConVarInt(SWBurn);
-			if(GetConVarBool(Notifications)) PrintToChat(client, "%s %T", MSGTAG, "Burn Witch", LANG_SERVER, GetConVarInt(SWBurn));
+			points[client] += witchpoints;
+			if(GetConVarBool(Notifications)) PrintToChat(client, "%s %T", MSGTAG, "Burn Witch", LANG_SERVER, witchpoints);
 			witchburning[client] = 1;
 		}
 	}
@@ -1000,33 +1039,32 @@ public Action:Event_Hurt(Handle:event, const String:name[], bool:dontBroadcast)
 	if(attacker > 0 && client > 0 && !IsFakeClient(attacker) && GetClientTeam(attacker) == 3 && GetClientTeam(client) == 2 && IsAllowedGameMode() && GetConVarInt(Enable) == 1 && GetConVarInt(IHurt) > 0)
 	{
 		hurtcount[attacker]++;
-		//new String:weapon[64];
-		//GetEventString(event, "weapon", weapon, sizeof(weapon));
-		//PrintToChatAll(weapon);
-		if (GetEntProp(attacker, Prop_Send, "m_zombieClass") == 4 && !GetEntProp(attacker, Prop_Send, "m_isGhost") && hurtcount[attacker] >= 8)
+		new type = GetEventInt(event, "type");
+		//PrintToChat(attacker, "Damagetype: %d", type);
+		if( (type == 263168 || type == 265216) && hurtcount[attacker] >= 8 )
 		{
 			if(GetConVarBool(Notifications)) PrintToChat(attacker, "%s %T", MSGTAG, "Spit Damage", LANG_SERVER, GetConVarInt(IHurt));
 			points[attacker] += GetConVarInt(IHurt);
 			hurtcount[attacker] -= 8;
-		}    
-		else if(GetEntProp(attacker, Prop_Send, "m_zombieClass") == 1 && !IsPlayerAlive(attacker))
+		} 
+		/*else if(GetEntProp(attacker, Prop_Send, "m_zombieClass") == 1 && !IsPlayerAlive(attacker))
 		{
 			if(FindConVar("l4d_cloud_damage_enabled") != INVALID_HANDLE)
 			{
 				if(GetConVarInt(FindConVar("l4d_cloud_damage_enabled")) == 1 && hurtcount[attacker] >= 8 && GetEntProp(attacker, Prop_Send, "m_isGhost") != 1)
 				{
-					if(GetConVarBool(Notifications)) PrintToChat(attacker, "%s %T", MSGTAG, "Cloud Damage", LANG_SERVER,GetConVarInt(IHurt));
+					if(GetConVarBool(Notifications)) PrintToChat(attacker, "%s %T", MSGTAG, "Cloud Damage", LANG_SERVER, GetConVarInt(IHurt));
 					points[attacker] += GetConVarInt(IHurt);
 					hurtcount[attacker] -= 10;
 				}
 			}	
-		}	
-		else if(hurtcount[attacker] >= 3)
+		}*/
+		else if(type != 263168 && type != 265216 && hurtcount[attacker] >= 3)
 		{
-			if(GetConVarBool(Notifications)) PrintToChat(attacker, "%s %T", MSGTAG, "Damage", LANG_SERVER,GetConVarInt(IHurt));
+			if(GetConVarBool(Notifications)) PrintToChat(attacker, "%s %T", MSGTAG, "Damage", LANG_SERVER, GetConVarInt(IHurt));
 			points[attacker] += GetConVarInt(IHurt);
 			hurtcount[attacker] -= 3;
-		}    
+		} 
 	}	
 }	
 
@@ -1044,35 +1082,30 @@ public Action:ShowPoints(client,args)
 {
 	if(IsAllowedGameMode() && GetConVarInt(Enable) == 1 && IsClientInGame(client) && IsClientConnected(client) && GetClientTeam(client) > 1 && args == 0)
 	{
-		PrintToChat(client, "%s %T", MSGTAG, "Your Points", LANG_SERVER, points[client]);
+		ReplyToCommand(client, "%s %T", MSGTAG, "Your Points", LANG_SERVER, points[client]);
 	}
 	return Plugin_Handled;
 }
 
 public Action:Command_RBuy(client, args)
 {
-	if (args > 0)
-	{
-		ReplyToCommand(client, "%T", "Usage sm_repeatbuy", LANG_SERVER);
-		return Plugin_Handled;
-	}
 	if(client == 0)
 	{
-		ReplyToCommand(client, "%T", "Server Response", LANG_SERVER);
+		ReplyToCommand(client, "%T", "Command is in-game only", LANG_SERVER);
 		return Plugin_Handled;
 	}	
-	if (args == 0 && client > 0 && IsClientInGame(client))
+	else if (args == 0 && IsClientInGame(client))
 	{
 		RemoveFlags();
 		if(points[client] < cost[client])
 		{
-			PrintToChat(client, "%s %T", MSGTAG, "Insufficient Funds", LANG_SERVER);
+			ReplyToCommand(client, "%s %T", MSGTAG, "Insufficient Funds", LANG_SERVER);
 			AddFlags();
 			return Plugin_Handled;
 		}	
 		if(cost[client] == -1)
 		{
-			PrintToChat(client, "%s %T", MSGTAG, "Item Disabled", LANG_SERVER);
+			ReplyToCommand(client, "%s %T", MSGTAG, "Item Disabled", LANG_SERVER);
 			AddFlags();
 			return Plugin_Handled;
 		}	
@@ -1082,6 +1115,7 @@ public Action:Command_RBuy(client, args)
 			ForcePlayerSuicide(client);
 		}	
 		else FakeClientCommand(client, "%s", item[client]);
+		//do additional actions for certain items
 		if(StrEqual(item[client], "z_spawn mob", false))
 		{
 			ucommonleft += GetConVarInt(FindConVar("z_common_limit"));
@@ -1091,7 +1125,8 @@ public Action:Command_RBuy(client, args)
 			new wep = GetPlayerWeaponSlot(client, 0);
 			if(wep == -1)
 			{
-				if(IsClientInGame(client)) PrintToChat(client, "%s %T", MSGTAG, "Primary Warning", LANG_SERVER);
+				ReplyToCommand(client, "%s %T", MSGTAG, "Primary Warning", LANG_SERVER);
+				points[client] += cost[client]; //refund
 				AddFlags();
 				return Plugin_Handled;
 			}
@@ -1121,17 +1156,16 @@ public Action:Command_RBuy(client, args)
 		AddFlags();
 		return Plugin_Handled;
 	}
-	return Plugin_Handled;
+	else
+	{
+		ReplyToCommand(client, "%T", "Usage sm_repeatbuy", LANG_SERVER, MSGTAG);
+		return Plugin_Handled;
+	}	
 }
 
 public Action:Command_Heal(client, args)
 {
-	if (args > 1)
-	{
-		ReplyToCommand(client, "%T", "Usage sm_heal", LANG_SERVER);
-		return Plugin_Handled;
-	}
-	if (args == 0)
+	if(args == 0)
 	{
 		RemoveFlags();
 		FakeClientCommand(client, "give health");
@@ -1139,128 +1173,132 @@ public Action:Command_Heal(client, args)
 		AddFlags();
 		return Plugin_Handled;
 	}
-	decl String:arg[65];
-	GetCmdArg(1, arg, sizeof(arg));
-	decl String:target_name[MAX_TARGET_LENGTH];
-	decl target_list[MAXPLAYERS], target_count, bool:tn_is_ml;
-	if ((target_count = ProcessTargetString(
-			arg,
-			client,
-			target_list,
-			MAXPLAYERS,
-			COMMAND_FILTER_ALIVE,
-			target_name,
-			sizeof(target_name),
-			tn_is_ml)) <= 0)
+	else if(args == 1)
 	{
-		ReplyToTargetError(client, target_count);
+		decl String:arg[65];
+		GetCmdArg(1, arg, sizeof(arg));
+		decl String:target_name[MAX_TARGET_LENGTH];
+		decl target_list[MAXPLAYERS], target_count, bool:tn_is_ml;
+		if ((target_count = ProcessTargetString(
+				arg,
+				client,
+				target_list,
+				MAXPLAYERS,
+				COMMAND_FILTER_ALIVE,
+				target_name,
+				sizeof(target_name),
+				tn_is_ml)) <= 0)
+		{
+			ReplyToTargetError(client, target_count);
+			return Plugin_Handled;
+		}
+		else
+		{
+			ShowActivity2(client, MSGTAG2, "%t", "Give Health", target_name);
+			
+			for (new i = 0; i < target_count; i++)
+			{
+				RemoveFlags();
+				new targetclient = target_list[i];
+				FakeClientCommand(targetclient, "give health");
+				SetEntPropFloat(targetclient, Prop_Send, "m_healthBuffer", 0.0);	
+				AddFlags();
+			}
+			return Plugin_Handled;
+		}	
+	}
+	else
+	{
+		ReplyToCommand(client, "%s%T", MSGTAG, "Usage sm_heal", LANG_SERVER);
 		return Plugin_Handled;
 	}
-	for (new i = 0; i < target_count; i++)
-	{
-		RemoveFlags();
-		new targetclient;
-		targetclient = target_list[i];
-		FakeClientCommand(targetclient, "give health");
-		SetEntPropFloat(targetclient, Prop_Send, "m_healthBuffer", 0.0);	
-		AddFlags();
-	}
-	return Plugin_Handled;
 }
 
 public Action:Command_Points(client, args)
 {
-	if (args < 1 || args > 2)
+	if(args == 2)
 	{
-		ReplyToCommand(client, "%T", "Usage sm_givepoints", LANG_SERVER);
-		return Plugin_Handled;
-	}
-	decl String:arg[MAX_NAME_LENGTH], String:arg2[4];
-	GetCmdArg(1, arg, sizeof(arg));
-	if (args > 1)
-	{
+		decl String:arg[MAX_NAME_LENGTH], String:arg2[4];
+		GetCmdArg(1, arg, sizeof(arg));
 		GetCmdArg(2, arg2, sizeof(arg2));
-	}
-	decl String:target_name[MAX_TARGET_LENGTH];
-	decl target_list[MAXPLAYERS], target_count, bool:tn_is_ml;
-	new targetclient;
-	if ((target_count = ProcessTargetString(
-			arg,
-			client,
-			target_list,
-			MAXPLAYERS,
-			COMMAND_FILTER_ALIVE|COMMAND_FILTER_NO_BOTS,
-			target_name,
-			sizeof(target_name),
-			tn_is_ml)) > 0)
-	{
-		for (new i = 0; i < target_count; i++)
+		decl String:target_name[MAX_TARGET_LENGTH];
+		decl target_list[MAXPLAYERS], target_count, bool:tn_is_ml;
+		new targetclient, amount = StringToInt(arg2);
+		if ((target_count = ProcessTargetString(
+				arg,
+				client,
+				target_list,
+				MAXPLAYERS,
+				COMMAND_FILTER_ALIVE|COMMAND_FILTER_NO_BOTS,
+				target_name,
+				sizeof(target_name),
+				tn_is_ml)) <= 0)
 		{
-			new amount = StringToInt(arg2);
-			if(amount == 0)
-			{
-				ReplyToCommand(client, "%s %T", MSGTAG, "Give Null", LANG_SERVER);
-			}	
-			targetclient = target_list[i];
-			points[targetclient] += amount;
-			new String:name[32];
-			GetClientName(targetclient, name, sizeof(name)); 
-			ReplyToCommand(client, "%s %T", MSGTAG, "sm_givepoints Response", LANG_SERVER, name, arg2);
+			ReplyToTargetError(client, target_count);
+			return Plugin_Handled;
 		}
+		else
+		{
+			ShowActivity2(client, MSGTAG2, "%t", "Give Points", amount, target_name);
+			
+			for (new i = 0; i < target_count; i++)
+			{
+				targetclient = target_list[i];
+				points[targetclient] += amount;
+			}
+			return Plugin_Handled;
+		}	
 	}
 	else
 	{
-		ReplyToTargetError(client, target_count);
+		ReplyToCommand(client, "%s %T", MSGTAG, "Usage sm_givepoints", LANG_SERVER);
+		return Plugin_Handled;
 	}
-	return Plugin_Handled;
-}
+}	
 
 public Action:Command_SPoints(client, args)
 {
-	if (args < 1 || args > 2)
+	if(args == 2)
 	{
-		ReplyToCommand(client, "%T", "Usage sm_setpoints", LANG_SERVER);
-		return Plugin_Handled;
-	}
-	decl String:arg[MAX_NAME_LENGTH], String:arg2[4];
-	GetCmdArg(1, arg, sizeof(arg));
-
-	if (args > 1)
-	{
+		decl String:arg[MAX_NAME_LENGTH], String:arg2[4];
+		GetCmdArg(1, arg, sizeof(arg));
 		GetCmdArg(2, arg2, sizeof(arg2));
-	}
-	decl String:target_name[MAX_TARGET_LENGTH];
-	decl target_list[MAXPLAYERS], target_count, bool:tn_is_ml;
-	
-	new targetclient;
-	
-	if ((target_count = ProcessTargetString(
-			arg,
-			client,
-			target_list,
-			MAXPLAYERS,
-			COMMAND_FILTER_ALIVE|COMMAND_FILTER_NO_BOTS,
-			target_name,
-			sizeof(target_name),
-			tn_is_ml)) > 0)
-	{
-		for (new i = 0; i < target_count; i++)
+		decl String:target_name[MAX_TARGET_LENGTH];
+		decl target_list[MAXPLAYERS], target_count, bool:tn_is_ml;
+		new targetclient, amount = StringToInt(arg2);
+		if ((target_count = ProcessTargetString(
+				arg,
+				client,
+				target_list,
+				MAXPLAYERS,
+				COMMAND_FILTER_ALIVE|COMMAND_FILTER_NO_BOTS,
+				target_name,
+				sizeof(target_name),
+				tn_is_ml)) <= 0)
 		{
-			targetclient = target_list[i];
-			points[targetclient] = StringToInt(arg2);
-			new String:name[32];
-			GetClientName(targetclient, name, sizeof(name)); 
-			ReplyToCommand(client, "%s %T", MSGTAG, "sm_setpoints Response", LANG_SERVER, name, arg2);
+			ReplyToTargetError(client, target_count);
+			return Plugin_Handled;
 		}
-	}
+		else
+		{
+			ShowActivity2(client, MSGTAG2, "%t", "Set Points", target_name, amount);
+		
+			for (new i = 0; i < target_count; i++)
+			{
+				targetclient = target_list[i];
+				points[targetclient] = amount;
+			}
+			return Plugin_Handled;
+		}
+	}	
 	else
 	{
-		ReplyToTargetError(client, target_count);
-	}
-	return Plugin_Handled;
+		ReplyToCommand(client, "%s %T", MSGTAG, "Usage sm_setpoints", LANG_SERVER, MSGTAG);
+		return Plugin_Handled;
+	}	
 }
 
-RemoveFlags()
+stock RemoveFlags()
 {
 	new flagsgive = GetCommandFlags("give");
 	new flagszspawn = GetCommandFlags("z_spawn");
@@ -1272,7 +1310,7 @@ RemoveFlags()
 	SetCommandFlags("director_force_panic_event", flagspanic & ~FCVAR_CHEAT);
 }	
 
-AddFlags()
+stock AddFlags()
 {
 	new flagsgive = GetCommandFlags("give");
 	new flagszspawn = GetCommandFlags("z_spawn");
@@ -1290,7 +1328,6 @@ BuildBuyMenu(client)
 	{
 		decl String:title[40], String:weapons[40], String:upgrades[40], String:health[40];
 		new Handle:menu = CreateMenu(TopMenu);
-		SetMenuExitBackButton(menu, true);
 		if(GetConVarInt(CatWeapons) == 1)
 		{
 			Format(weapons, sizeof(weapons), "%T", "Weapons", LANG_SERVER);
@@ -1314,7 +1351,6 @@ BuildBuyMenu(client)
 	{
 		decl String:title[40], String:boomer[40], String:spitter[40], String:smoker[40], String:hunter[40], String:charger[40], String:jockey[40], String:tank[40], String:witch[40], String:witch_bride[40], String:heal[40], String:suicide[40], String:horde[40], String:mob[40], String:umob[40];
 		new Handle:menu = CreateMenu(InfectedMenu);
-		SetMenuExitBackButton(menu, true);
 		if(GetConVarInt(PointsIHeal) > -1)
 		{
 			Format(heal, sizeof(heal), "%T", "Heal", LANG_SERVER);
@@ -1440,21 +1476,23 @@ public TopMenu(Handle:menu, MenuAction:action, param1, param2)
 {
 	switch(action)
 	{
-	case MenuAction_End:
-		CloseHandle(menu);	
-	case MenuAction_Select:
+		case MenuAction_End:
+		{
+			CloseHandle(menu);	
+		}
+		case MenuAction_Select:
 		{
 			new String:menu1[56];
 			GetMenuItem(menu, param2, menu1, sizeof(menu1));
-			if(StrEqual(menu1, "g_WeaponsMenu", false))
+			if(StrEqual(menu1, "g_WeaponsMenu"))
 			{
 				BuildWeaponsMenu(param1);
 			}	
-			if(StrEqual(menu1, "g_HealthMenu", false))
+			else if(StrEqual(menu1, "g_HealthMenu"))
 			{
 				BuildHealthMenu(param1);
 			}	
-			if(StrEqual(menu1, "g_UpgradesMenu", false))
+			else if(StrEqual(menu1, "g_UpgradesMenu"))
 			{
 				BuildUpgradesMenu(param1);
 			}	
@@ -1466,45 +1504,46 @@ public MenuHandler(Handle:menu, MenuAction:action, param1, param2)
 {
 	switch(action)
 	{
-	case MenuAction_End:
-		CloseHandle(menu);	
-		
-	case MenuAction_Cancel:
+		case MenuAction_End:
+		{
+			CloseHandle(menu);	
+		}
+		case MenuAction_Cancel:
 		{
 			if (param2 == MenuCancel_ExitBack)
 			{	
 				BuildBuyMenu(param1);
 			}
 		}		
-	case MenuAction_Select:
+		case MenuAction_Select:
 		{
 			new String:menu1[56];
 			GetMenuItem(menu, param2, menu1, sizeof(menu1));
-			if(StrEqual(menu1, "g_MeleeMenu", false))
+			if(StrEqual(menu1, "g_MeleeMenu"))
 			{
 				BuildMeleeMenu(param1);
 			}
-			if(StrEqual(menu1, "g_RiflesMenu", false))
+			else if(StrEqual(menu1, "g_RiflesMenu"))
 			{
 				BuildRiflesMenu(param1);
 			}
-			if(StrEqual(menu1, "g_SnipersMenu", false))
+			else if(StrEqual(menu1, "g_SnipersMenu"))
 			{
 				BuildSniperMenu(param1);
 			}
-			if(StrEqual(menu1, "g_ShotgunsMenu", false))
+			else if(StrEqual(menu1, "g_ShotgunsMenu"))
 			{
 				BuildShotgunMenu(param1);
 			}	
-			if(StrEqual(menu1, "g_SMGMenu", false))
+			else if(StrEqual(menu1, "g_SMGMenu"))
 			{
 				BuildSMGMenu(param1);
 			}
-			if(StrEqual(menu1, "g_ThrowablesMenu", false))
+			else if(StrEqual(menu1, "g_ThrowablesMenu"))
 			{
 				BuildThrowablesMenu(param1);
 			}	
-			if(StrEqual(menu1, "g_MiscMenu", false))
+			else if(StrEqual(menu1, "g_MiscMenu"))
 			{
 				BuildMiscMenu(param1);
 			}	
@@ -1563,6 +1602,14 @@ BuildMeleeMenu(client)
 			continue;
 		}	
 		else if(i == 10 && GetConVarInt(PointsPan) < 0)
+		{
+			continue;
+		}		
+		else if(i == 11 && GetConVarInt(PointsKnife) < 0)
+		{
+			continue;
+		}		
+		else if(i == 12 && GetConVarInt(PointsShield) < 0)
 		{
 			continue;
 		}	
@@ -1799,7 +1846,7 @@ BuildMiscMenu(client)
 	GetConVarString(FindConVar("mp_gamemode"), gamemode, sizeof(gamemode));
 	if(!StrEqual(gamemode, "scavenge", false) && GetConVarInt(PointsGasCan) > -1)
 	{
-		Format(gascan, sizeof(gascan),"Gascan");
+		Format(gascan, sizeof(gascan), "%T", "Gascan", LANG_SERVER);
 		AddMenuItem(menu, "weapon_gascan", gascan);
 	}	
 	if(GetConVarInt(PointsOxy) > -1)
@@ -1912,6 +1959,16 @@ public MenuHandler_Melee(Handle:menu, MenuAction:action, param1, param2)
 			{
 				item[param1] = "give knife";
 				cost[param1] = GetConVarInt(PointsKnife);
+			}
+			else if(StrEqual(item1, "hunting_knife", false))
+			{
+				item[param1] = "give hunting_knife";
+				cost[param1] = GetConVarInt(PointsKnife);
+			}
+			else if(StrEqual(item1, "riotshield", false))
+			{
+				item[param1] = "give riotshield";
+				cost[param1] = GetConVarInt(PointsShield);
 			}
 			else if(StrEqual(item1, "fireaxe", false))
 			{
@@ -2420,18 +2477,37 @@ public InfectedMenu(Handle:menu, MenuAction:action, param1, param2)
 
 public OnEntityCreated(entity, const String:classname[])
 {	
-	if(!StrEqual(classname, "infected", false)) return;
-	new number = 0;
-	if(ucommonleft > 0)
+	if(StrEqual(classname, "infected", false) && ucommonleft > 0)
 	{
-		if(GetRandomInt(1, 6) == 1) SetEntityModel(entity, "models/infected/common_male_riot.mdl");
-		if(GetRandomInt(1, 6) == 2) SetEntityModel(entity, "models/infected/common_male_ceda.mdl");
-		if(GetRandomInt(1, 6) == 3) SetEntityModel(entity, "models/infected/common_male_clown.mdl");
-		if(GetRandomInt(1, 6) == 4) SetEntityModel(entity, "models/infected/common_male_mud.mdl");
-		if(GetRandomInt(1, 6) == 5) SetEntityModel(entity, "models/infected/common_male_roadcrew.mdl");
-		if(GetRandomInt(1, 6) == 6) SetEntityModel(entity, "models/infected/common_male_fallen_survivor.mdl");
+		new rand = GetRandomInt(1, 6);
+		switch(rand)
+		{
+			case 1:
+			{
+				SetEntityModel(entity, "models/infected/common_male_riot.mdl");
+			}
+			case 2:
+			{
+				SetEntityModel(entity, "models/infected/common_male_ceda.mdl");
+			}
+			case 3:
+			{
+				SetEntityModel(entity, "models/infected/common_male_clown.mdl");
+			}
+			case 4:
+			{
+				SetEntityModel(entity, "models/infected/common_male_mud.mdl");
+			}
+			case 5:
+			{
+				SetEntityModel(entity, "models/infected/common_male_roadcrew.mdl");
+			}
+			case 6:
+			{
+				SetEntityModel(entity, "models/infected/common_male_fallen_survivor.mdl");
+			}
+		}	
 		ucommonleft--;
-		if(ucommonleft == number) return;
 	}	
 }
 
@@ -3008,7 +3084,7 @@ public MenuHandler_ConfirmUpgrades(Handle:menu, MenuAction:action, param1, param
 					new m60ammo = 150;
 					new nadeammo = 30;
 					new Handle:cvar = FindConVar("l4d2_guncontrol_m60ammo");
-					new Handle:cvar2 = FindConVar("l4d2_guncontrol_grenadelauncherammo");
+					new Handle:cvar2 = FindConVar("ammo_grenadelauncher_max");
 					if(cvar != INVALID_HANDLE)
 					{
 						m60ammo = GetConVarInt(cvar);
@@ -3072,18 +3148,18 @@ public MenuHandler_ConfirmI(Handle:menu, MenuAction:action, param1, param2)
 			{
 				if(points[param1] < cost[param1])
 				{
-					PrintToChat(param1, "%s %T", MSGTAG, "Insufficient Funds", LANG_SERVER);
+					ReplyToCommand(param1, "%s %T", MSGTAG, "Insufficient Funds", LANG_SERVER);
 					return;
 				}	
 				if(StrEqual(item[param1], "suicide", false))
 				{
 					ForcePlayerSuicide(param1);
 				}
-				if(StrEqual(item[param1], "z_spawn mob", false))
+				else if(StrEqual(item[param1], "z_spawn mob", false))
 				{
 					ucommonleft += GetConVarInt(FindConVar("z_common_limit"));
 				}	
-				if(StrEqual(item[param1], "z_spawn tank auto", false))
+				else if(StrEqual(item[param1], "z_spawn tank auto", false))
 				{
 					if(tanksspawned == GetConVarInt(TankLimit))
 					{
@@ -3092,7 +3168,7 @@ public MenuHandler_ConfirmI(Handle:menu, MenuAction:action, param1, param2)
 					}	
 					tanksspawned++;
 				}
-				if(StrEqual(item[param1], "z_spawn witch auto", false) || StrEqual(item[param1], "z_spawn witch_bride auto", false))
+				else if(StrEqual(item[param1], "z_spawn witch auto", false) || StrEqual(item[param1], "z_spawn witch_bride auto", false))
 				{
 					if(witchsspawned == GetConVarInt(WitchLimit))
 					{
@@ -3101,6 +3177,66 @@ public MenuHandler_ConfirmI(Handle:menu, MenuAction:action, param1, param2)
 					}
 					witchsspawned++;
 				}
+				else if(StrContains(item[param1], "z_spawn", false) != -1 && StrContains(item[param1], "mob", false) == -1)
+				{
+					if(IsPlayerAlive(param1) || IsPlayerGhost(param1))
+					{
+						return;
+					}	
+					new bool:resetGhost[MaxClients+1], bool:resetAlive[MaxClients+1], bool:resetLifeState[MaxClients+1];
+					for(new i=1;i<=MaxClients;i++)
+					{
+						if(i == param1 || !IsClientInGame(i) || GetClientTeam(i) != 3 || IsFakeClient(i))
+						{
+							continue;
+						}
+						
+						if(IsPlayerGhost(i))
+						{
+							resetGhost[i] = true;
+							resetAlive[i] = true;
+							SetPlayerGhost(i, false);
+							SetPlayerAlive(i, true);
+						}
+						else if(!IsPlayerAlive(i))
+						{
+							resetLifeState[i] = true;
+							SetPlayerLifeState(i, false);
+						}	
+					}
+
+					RemoveFlags();
+					FakeClientCommand(param1, item[param1]);
+					
+					new maxretry = GetConVarInt(SpawnTries);
+					for(new i;i<maxretry;i++)
+					{
+						if(!IsPlayerAlive(param1))
+						{
+							FakeClientCommand(param1, item[param1]);
+						}	
+					}
+					
+					if(IsPlayerAlive(param1))
+					{
+						strcopy(bought[param1], sizeof(bought), item[param1]);
+						boughtcost[param1] = cost[param1];
+						points[param1] -= cost[param1];
+					}
+					else
+					{
+						PrintToChat(param1, "%s %T", MSGTAG, "Spawn Failed", param1);
+					}	
+					AddFlags();
+
+					for(new i=1;i<=MaxClients;i++)
+					{
+						if (resetGhost[i]) SetPlayerGhost(i, true);
+						if (resetAlive[i]) SetPlayerAlive(i, false);
+						if (resetLifeState[i]) SetPlayerLifeState(i, true);
+					}
+					return;
+				}	
 				strcopy(bought[param1], sizeof(bought), item[param1]);
 				boughtcost[param1] = cost[param1];
 				points[param1] -= cost[param1];
@@ -3110,4 +3246,25 @@ public MenuHandler_ConfirmI(Handle:menu, MenuAction:action, param1, param2)
 			}
 		}
 	}
-}	
+}
+
+stock bool:IsPlayerGhost(client)
+{
+	if(GetEntData(client, SendProp_IsGhost, 1)) return true;
+	return false;
+}
+
+stock SetPlayerLifeState(client, bool:lifestate)
+{
+	SetEntData(client, SendProp_LifeState, lifestate, 1);
+}
+
+stock SetPlayerAlive(client, bool:alive)
+{
+	SetEntData(client, SendProp_IsAlive, alive, 1, true);
+}
+
+stock SetPlayerGhost(client, bool:ghost)
+{
+	SetEntData(client, SendProp_IsGhost, ghost, 1);
+}
