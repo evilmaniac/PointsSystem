@@ -148,6 +148,16 @@
 	"knife"
 	{
 		"en"	"Knife"
+	}
+
+	"hunting_knife"
+	{
+		"en"	"Knife"
+	}
+
+	"riotshield"
+	{
+		"en"	"Riot Shield"
 	}	
 
 	"baseball_bat"
@@ -362,7 +372,7 @@
 
 	"Explosive Ammo Pack"
 	{
-		"en"	"Incendiary Ammo Pack"
+		"en"	"Explosive Ammo Pack"
 	}
 
 	"Incendiary Ammo Pack"
