@@ -1,14 +1,14 @@
-#if defined _ps_included_
+#if defined _ps
  #endinput
 #endif
-#define _ps_included_
+#define _ps
 
 /**
  * Gets the version of PS
  *
  * @return				current version of ps system in form of a float
  */
-native Float:PS_GetVersion();
+native PS_GetVersion();
 
 /**
  * Sets a client's points
@@ -20,13 +20,22 @@ native Float:PS_GetVersion();
 native PS_SetPoints(client, newval);
 
 /**
+ * Deduct's points from client
+ *
+ * @param iClientIndex		client index
+ * @param iCost				Points to deduct
+ * @return					none
+ */
+native PS_RemovePoints(iClientIndex, iCost);
+
+/**
  * Sets a client's item string
  *
  * @param client			client index
  * @param newstring			new value of a client's item string
  * @return				none
  */
-native PS_SetItem(client, const String:newstring[]);
+native PS_SetItem(client, String:newstring[]);
 
 /**
  * Sets a client's item cost
@@ -44,7 +53,7 @@ native PS_SetCost(client, newval);
  * @param newstring			new value of a client's bought string
  * @return				none
  */
-native PS_SetBought(client, const String:newstring[]);
+native PS_SetBought(client, String:newstring[]);
 
 /**
  * Sets a client's bought cost
@@ -94,7 +103,7 @@ native PS_GetCost(client);
  * @param dest				destination for the item string to go
  * @return				cost
  */
-native PS_GetItem(client, String:dest[], maxlength);
+native PS_GetItem(client, String:dest[]);
 
 /**
  * Gets a client's current bought item
@@ -103,15 +112,15 @@ native PS_GetItem(client, String:dest[], maxlength);
  * @param dest			destination for the bought string to go
  * @return				cost
  */
-native PS_GetBought(client, String:dest[], maxlength);
+native PS_GetBought(client, String:dest[]);
 
 /**
  * Registers a module for points system
  *
  * @param modulename	String that contains the module to be registered's name
- * @return				false if successful true if already registered, true should never happen.
+ * @return				false if successful true if already registered
  */
- native bool:PS_RegisterModule(const String:modulename[]);
+ native bool:PS_RegisterModule(String:modulename[]);
  
  /**
  * Unregisters a module for points system
@@ -119,29 +128,20 @@ native PS_GetBought(client, String:dest[], maxlength);
  * @param modulename	String that contains the module to be unregistered's name
  * @return				none
  */
- native PS_UnregisterModule(const String:modulename[]);
+ native PS_UnregisterModule(String:modulename[]);
  
   /**
  * Called when Points System is loaded
  *
+ * @param late			if PS was late loaded this will be true
  * @return				none
  */
- forward OnPSLoaded();
+ forward OnPSLoaded(bool:late);
  
   /**
  * Called when Points System is unloaded
  *
+ * @param late			if PS was late loaded this will be true
  * @return				none
  */
  forward OnPSUnloaded();
- 
- public SharedPlugin:__pl_ps = 
-{
-	name = "ps_natives",
-	file = "l4d2_points_system.smx",
-#if defined REQUIRE_PLUGIN
-	required = 1,
-#else
-	required = 0,
-#endif
-};

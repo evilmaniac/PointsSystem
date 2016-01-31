@@ -3,7 +3,7 @@
 
 #include <ps_natives>
 
-#define PLUGIN_VERSION "1.1"
+#define PLUGIN_VERSION "1.2"
 #define MSGTAG "\x04[PS]\x01"
 #define PS_MIN "1.66"
 #define PS_ModuleName "!usepoints Enabler"
@@ -31,6 +31,15 @@ public OnPluginStart()
 	RegConsoleCmd("sm_usepoints", Cmd_UsePoints);
 }
 
+public OnPluginEnd()
+{
+	if(LibraryExists("ps_natives") && loaded)
+	{
+		loaded = false;
+		PS_UnregisterModule(PS_ModuleName);
+	}
+}
+	
 public OnPSLoaded()
 {
 	if(LibraryExists("ps_natives"))

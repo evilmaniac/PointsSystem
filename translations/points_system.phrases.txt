@@ -1,5 +1,25 @@
 "Phrases"
 {
+	"all Infected players"
+	{
+		"en"		"all Infected players"
+	}
+
+	"all Survivor players"
+	{
+		"en"		"all Survivor players"
+	}
+
+	"Game Check Fail"
+	{
+		"en"		"This plugin only supports Left 4 Dead 2!"
+	}
+	
+	"Modules Array Failure"
+	{
+		"en"		"Failed to initialize modules adt_array"
+	}
+
 	"Head Hunter"
 	{
 		"#format"	"{1:d}"
@@ -170,12 +190,8 @@
 	
 	"Usage sm_repeatbuy"
 	{
-		"en"		"[SM] Usage: sm_repeatbuy"
-	}
-	
-	"Server Response"
-	{
-		"en"		"[SM] This command can only be used in-game"
+		"#format"	"{1:s}"
+		"en"		"{1} Usage: sm_repeatbuy"
 	}
 	
 	"Insufficient Funds"
@@ -195,18 +211,24 @@
 	
 	"Usage sm_heal"
 	{
-		"en"		"[SM] Usage: sm_heal <target>"
+		"en"		"Usage: sm_heal <target>"
+	}
+	
+	"Give Health"
+	{
+		"#format"	"{1:s}"
+		"en"		"Healed {1}"
 	}
 	
 	"Usage sm_givepoints"
 	{
-		"en"		"[SM] Usage: sm_givepoints <#userid|name> [number of points]"
+		"en"		"Usage: sm_givepoints <#userid|name> [number of points]"
 	}
 	
-	"sm_givepoints Response"
+	"Give Points"
 	{
-		"#format"	"{1:s},{2:s}"
-		"en"		"{1}'s points have been increased by: {2}!"
+		"#format"	"{1:d},{2:s}"
+		"en"		"{1} points were given to {2}"
 	}
 	
 	"Give Null"
@@ -216,13 +238,14 @@
 	
 	"Usage sm_setpoints"
 	{
-		"en"		"[SM] Usage: sm_setpoints <#userid|name> [number of points]"
+		"#format"	"{1:s}"
+		"en"		"Usage: sm_setpoints <#userid|name> [number of points]"
 	}
 	
-	"sm_setpoints Response"
+	"Set Points"
 	{
-		"#format"	"{1:s},{2:s}"
-		"en"		"{1}'s points have been set to: {2}!"
+		"#format"	"{1:s},{2:d}"
+		"en"		"{1} points were set to {2}"
 	}
 	
 	"Tank Limit"
@@ -245,6 +268,11 @@
 	{
 		"#format"	"{1:d}"
 		"en"		"Cost: {1}"
+	}
+
+	"Spawn Failed"
+	{
+		"en"		"Failed to spawn!"
 	}
 	
 	"Modules"
