@@ -446,7 +446,8 @@ public OnPluginStart(){
 	AddMultiTargetFilter("@s", FilterSurvivors, "all Survivor players", true);
 	AddMultiTargetFilter("@infected", FilterInfected, "all Infected players", true);
 	AddMultiTargetFilter("@i", FilterInfected, "all Infected players", true);
-	CreateConVar("l4d2_points_sys_version", PLUGIN_TITLE, "Version of Points System on this server.", FCVAR_PLUGIN|FCVAR_NOTIFY|FCVAR_DONTRECORD|FCVAR_REPLICATED);
+	//CreateConVar("l4d2_points_sys_version", PLUGIN_TITLE, "Version of Points System on this server.", FCVAR_PLUGIN|FCVAR_NOTIFY|FCVAR_DONTRECORD|FCVAR_REPLICATED);
+	CreateConVar("em_points_sys_version", PLUGIN_TITLE, "Version of Points System on this server.", FCVAR_PLUGIN|FCVAR_NOTIFY|FCVAR_DONTRECORD|FCVAR_REPLICATED);
 
 	registerAdminCommands();
 	registerConsoleCommands();
