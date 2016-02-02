@@ -3,7 +3,7 @@
 #include <sdktools>
 #include <clientprefs>
 
-#define PLUGIN_TITLE "1.7.5"
+#define PLUGIN_TITLE "1.7.6"
 
 #define MSGTAG "\x04[PS]\x01"
 #define MSGTAG2 "\x04[PS]\x01 "
@@ -13,15 +13,9 @@ new Handle:ModulesArray = INVALID_HANDLE;
 new Handle:Forward1 = INVALID_HANDLE;
 new Handle:Forward2 = INVALID_HANDLE;
 
-new Handle:hCookiePoints = INVALID_HANDLE;
-
 enum plugin_settings{
 	Float:fVersion,
 	iStringSize,
-	iLimitNormal,
-	iLimitRegistered,
-	iLimitPremium,
-	iCostProc,
 	Handle:hEnabled,
 	Handle:hModes,
 	Handle:hNotifications,
@@ -36,14 +30,14 @@ enum plugin_settings{
 new PluginSettings[plugin_settings];
 
 public initPluginSettings(){
-	PluginSettings[fVersion]			= 1.75;
-	PluginSettings[iStringSize] 		= 64;
+	PluginSettings[fVersion] = 1.76;
+	PluginSettings[iStringSize] = 64;
 
-	PluginSettings[hStartPoints] = CreateConVar("l4d2_points_start", "0", "Points to start each round/map with.", FCVAR_PLUGIN);
+	PluginSettings[hStartPoints] = CreateConVar("l4d2_points_start", "10", "Points to start each round/map with.", FCVAR_PLUGIN);
 	PluginSettings[hNotifications] = CreateConVar("l4d2_points_notify", "1", "Show messages when points are earned?", FCVAR_PLUGIN);
 	PluginSettings[hEnabled] = CreateConVar("l4d2_points_enable", "1", "Enable Point System?", FCVAR_PLUGIN);
 	PluginSettings[hModes] = CreateConVar("l4d2_points_modes", "coop,realism,versus,teamversus", "Which game modes to use Point System", FCVAR_PLUGIN);
-	PluginSettings[hResetPoints] = CreateConVar("l4d2_points_reset_mapchange", "versus,teamversus", "Which game modes to reset point count on round end and round start", FCVAR_PLUGIN);
+	PluginSettings[hResetPoints] = CreateConVar("l4d2_points_reset_mapchange", "", "Which game modes to reset point count on round end and round start", FCVAR_PLUGIN);
 	PluginSettings[hTankLimit] = CreateConVar("l4d2_points_tank_limit", "2", "How many tanks to be allowed spawned per team", FCVAR_PLUGIN);
 	PluginSettings[hWitchLimit] = CreateConVar("l4d2_points_witch_limit", "3", "How many witchs' to be allwed spawned per team", FCVAR_PLUGIN);
 	PluginSettings[hSpawnAttempts] = CreateConVar("l4d2_points_spawn_tries", "2", "How many times to attempt respawning when buying an special infected", FCVAR_PLUGIN);
@@ -113,8 +107,8 @@ enum counter_data{
 new CounterData[counter_data];
 
 public initCounterData(){
-	CounterData[iTanksSpawned] 		= 0;
-	CounterData[iWitchesSpawned] 	= 0;
+	CounterData[iTanksSpawned] = 0;
+	CounterData[iWitchesSpawned] = 0;
 	return;
 }
 
@@ -490,8 +484,9 @@ public bool:IsClientPlaying(iClientIndex){
 
 public bool:IsClientBot(iClientIndex){
 	if(iClientIndex > 0){
-		if(IsFakeClient(iClientIndex))
-			return true;
+		if(IsClientConnected(iClientIndex)
+			if(IsFakeClient(iClientIndex))
+				return true;
 	}
 	return false;
 }
@@ -554,26 +549,6 @@ stock bool:IsAllowedReset(){
 	GetConVarString(PluginSettings[hResetPoints], sEnabledModes, sizeof(sEnabledModes));
 
 	return (StrContains(sEnabledModes, sGameMode) != -1);
-}
-
-public bool:loadPoints(iClientIndex){
-	new iTimeStamp = GetClientCookieTime(iClientIndex, hCookiePoints);
-
-	if(AreClientCookiesCached(iClientIndex)){
-		if((GetTime() - iTimeStamp) < 3600){
-			new iPoints; decl String:sPoints[12];
-
-			GetClientCookie(iClientIndex, hCookiePoints, sPoints, sizeof(sPoints));
-			iPoints = StringToInt(sPoints);
-
-			if(iPoints > PlayerData[iClientIndex][iPlayerPoints]){
-				PlayerData[iClientIndex][iPlayerPoints] = iPoints;
-				PlayerData[iClientIndex][bPointsLoaded] = true;
-			}
-			return true;
-		}
-	}
-	return false;
 }
 
 public setStartPoints(iClientIndex){
