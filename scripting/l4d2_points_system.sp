@@ -484,7 +484,7 @@ public bool:IsClientPlaying(iClientIndex){
 
 public bool:IsClientBot(iClientIndex){
 	if(iClientIndex > 0){
-		if(IsClientConnected(iClientIndex)
+		if(IsClientConnected(iClientIndex))
 			if(IsFakeClient(iClientIndex))
 				return true;
 	}
