@@ -27,6 +27,7 @@ Handle Forward2 = null;
 
 enum plugin_settings{
 	Float:fVersion,
+	String:sVersion,
 	iStringSize,
 	Handle:hEnabled,
 	Handle:hModes,
@@ -45,6 +46,7 @@ void initPluginSettings(){
 	PluginSettings[fVersion] = 1.78;
 	PluginSettings[iStringSize] = 64;
 
+	PluginSettings[sVersion] = CreateConVar("em_points_sys_version", PLUGIN_VERSION, "Version of Points System on this server.", FCVAR_PLUGIN|FCVAR_NOTIFY|FCVAR_DONTRECORD|FCVAR_REPLICATED);
 	PluginSettings[hStartPoints] = CreateConVar("l4d2_points_start", "10", "Points to start each round/map with.", FCVAR_PLUGIN);
 	PluginSettings[hNotifications] = CreateConVar("l4d2_points_notify", "1", "Show messages when points are earned?", FCVAR_PLUGIN);
 	PluginSettings[hEnabled] = CreateConVar("l4d2_points_enable", "1", "Enable Point System?", FCVAR_PLUGIN);
@@ -442,7 +444,6 @@ public void OnPluginStart(){
 	AddMultiTargetFilter("@s", FilterSurvivors, "all Survivor players", true);
 	AddMultiTargetFilter("@infected", FilterInfected, "all Infected players", true);
 	AddMultiTargetFilter("@i", FilterInfected, "all Infected players", true);
-	CreateConVar("em_points_sys_version", PLUGIN_VERSION, "Version of Points System on this server.", FCVAR_PLUGIN|FCVAR_NOTIFY|FCVAR_DONTRECORD|FCVAR_REPLICATED);
 
 	registerAdminCommands();
 	registerConsoleCommands();
@@ -1110,7 +1111,7 @@ public Action Event_Heal(Handle hEvent, const char[] sEventName, bool bDontBroad
 	return;
 }	
 
-handleProtect(int iClientIndex){
+void handleProtect(int iClientIndex){
 	int iProtectReward = GetConVarInt(PointRewards[SurvTeamProtect]);
 	if(iProtectReward > 0){
 		PlayerData[iClientIndex][iProtectCount]++;
