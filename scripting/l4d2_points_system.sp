@@ -1,11 +1,9 @@
 #include <sourcemod>
 #include <sdktools>
-#include <clientprefs>
 
 #define PLUGIN_VERSION "1.7.8"
 
 #define MSGTAG "\x04[PS]\x01"
-#define MSGTAG2 "\x04[PS]\x01 "
 #define MODULES_SIZE 100
 #define MAX_MELEE_LENGTH 13
 
@@ -27,8 +25,8 @@ Handle Forward2 = null;
 
 enum plugin_settings{
 	Float:fVersion,
-	String:sVersion,
 	iStringSize,
+	Handle:hVersion,
 	Handle:hEnabled,
 	Handle:hModes,
 	Handle:hNotifications,
@@ -46,7 +44,7 @@ void initPluginSettings(){
 	PluginSettings[fVersion] = 1.78;
 	PluginSettings[iStringSize] = 64;
 
-	PluginSettings[sVersion] = CreateConVar("em_points_sys_version", PLUGIN_VERSION, "Version of Points System on this server.", FCVAR_PLUGIN|FCVAR_NOTIFY|FCVAR_DONTRECORD|FCVAR_REPLICATED);
+	PluginSettings[hVersion] = CreateConVar("em_points_sys_version", PLUGIN_VERSION, "Version of Points System on this server.", FCVAR_PLUGIN|FCVAR_NOTIFY|FCVAR_DONTRECORD|FCVAR_REPLICATED);
 	PluginSettings[hStartPoints] = CreateConVar("l4d2_points_start", "10", "Points to start each round/map with.", FCVAR_PLUGIN);
 	PluginSettings[hNotifications] = CreateConVar("l4d2_points_notify", "1", "Show messages when points are earned?", FCVAR_PLUGIN);
 	PluginSettings[hEnabled] = CreateConVar("l4d2_points_enable", "1", "Enable Point System?", FCVAR_PLUGIN);
@@ -1441,7 +1439,7 @@ public Action Command_Heal(client, args)
 		}
 		else
 		{
-			ShowActivity2(client, MSGTAG2, "%t", "Give Health", target_name);
+			ShowActivity2(client, MSGTAG, " %t", "Give Health", target_name);
 			
 			for (new i = 0; i < target_count; i++)
 			{
@@ -1484,7 +1482,7 @@ public Action Command_Points(client, args)
 		}
 		else
 		{
-			//ShowActivity2(client, MSGTAG2, "%t", "Give Points", amount, target_name);
+			//ShowActivity2(client, MSGTAG, "%t", "Give Points", amount, target_name);
 			for (new i = 0; i < target_count; i++)
 			{
 				targetclient = target_list[i];
@@ -1525,7 +1523,7 @@ public Action Command_SPoints(client, args)
 		}
 		else
 		{
-			//ShowActivity2(client, MSGTAG2, "%t", "Set Points", target_name, amount);
+			//ShowActivity2(client, MSGTAG, "%t", "Set Points", target_name, amount);
 			for (new i = 0; i < target_count; i++)
 			{
 				targetclient = target_list[i];
