@@ -3,15 +3,15 @@
 #include <sdktools>
 #include <clientprefs>
 
-#define PLUGIN_TITLE "1.7.6"
+#define PLUGIN_TITLE "1.7.7"
 
 #define MSGTAG "\x04[PS]\x01"
 #define MSGTAG2 "\x04[PS]\x01 "
 #define MODULES_SIZE 100
 
-new Handle:ModulesArray = INVALID_HANDLE;
-new Handle:Forward1 = INVALID_HANDLE;
-new Handle:Forward2 = INVALID_HANDLE;
+new Handle:ModulesArray = null;
+new Handle:Forward1 = null;
+new Handle:Forward2 = null;
 
 enum plugin_settings{
 	Float:fVersion,
@@ -30,7 +30,7 @@ enum plugin_settings{
 new PluginSettings[plugin_settings];
 
 public initPluginSettings(){
-	PluginSettings[fVersion] = 1.76;
+	PluginSettings[fVersion] = 1.77;
 	PluginSettings[iStringSize] = 64;
 
 	PluginSettings[hStartPoints] = CreateConVar("l4d2_points_start", "10", "Points to start each round/map with.", FCVAR_PLUGIN);
@@ -432,7 +432,7 @@ public hookGameEvents(){
 
 public OnPluginStart(){
 	ModulesArray = CreateArray(10); // Reduced from 100 to 10.
-	if(ModulesArray == INVALID_HANDLE)
+	if(ModulesArray == null)
 		SetFailState("%T", "Modules Array Failure", LANG_SERVER);
 
 	AddMultiTargetFilter("@survivors", FilterSurvivors, "all Survivor players", true);
@@ -740,6 +740,7 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 	{
 		SetFailState("%T", "Game Check Fail", LANG_SERVER);
 	}
+	CreateNative("PS_IsSystemEnabled", PS_IsSystemEnabled);
 	CreateNative("PS_GetVersion", PS_GetVersion);
 	CreateNative("PS_SetPoints", PS_SetPoints);
 	CreateNative("PS_SetItem", PS_SetItem);
@@ -769,6 +770,10 @@ public OnPluginEnd()
 	Call_Finish(_:result);
 }	
 
+public PS_IsSystemEnabled(Handle:hPlugin, iNumArguments){
+	return bool:(GetConVarInt(PluginSettings[hEnabled]) == 1);
+}
+
 public PS_RemovePoints(Handle:hPlugin, iNumArguments){
 	removePoints(GetNativeCell(1), GetNativeCell(2));
 	return;
@@ -785,11 +790,11 @@ public PS_RegisterModule(Handle:plugin, numParams)
 		GetArrayString(ModulesArray, i, buffer, MODULES_SIZE);
 		if(StrEqual(buffer, test))
 		{
-			return true;
+			return false;
 		}	
 	}
 	PushArrayString(ModulesArray, test);
-	return false;
+	return true;
 }	
 
 public PS_UnregisterModule(Handle:plugin, numParams)
@@ -3236,7 +3241,7 @@ public MenuHandler_ConfirmHealth(Handle:menu, MenuAction:action, param1, param2)
 	}
 }	
 
-public bool:isCarryingWeapon(iClientIndex){
+public bool:IsCarryingWeapon(iClientIndex){
 	new iWeapon = GetPlayerWeaponSlot(iClientIndex, 0);
 	if(iWeapon == -1)
 		return false;
@@ -3245,14 +3250,14 @@ public bool:isCarryingWeapon(iClientIndex){
 
 public reloadAmmo(iClientIndex, iCost, const String:sItem[]){
 	new hWeapon = GetPlayerWeaponSlot(iClientIndex, 0);
-	if(isCarryingWeapon(iClientIndex)){
+	if(IsCarryingWeapon(iClientIndex)){
 
 		decl String:sWeapon[40]; sWeapon[0] = '\0';
 		GetEdictClassname(hWeapon, sWeapon, sizeof(sWeapon));
 		if(StrEqual(sWeapon, "weapon_rifle_m60", false)){
 			new iAmmo_m60 = 150;
 			new Handle:hGunControl_m60 = FindConVar("l4d2_guncontrol_m60ammo");
-			if(hGunControl_m60 != INVALID_HANDLE){
+			if(hGunControl_m60 != null){
 				iAmmo_m60 = GetConVarInt(hGunControl_m60);
 				CloseHandle(hGunControl_m60);
 			}
@@ -3261,7 +3266,7 @@ public reloadAmmo(iClientIndex, iCost, const String:sItem[]){
 		else if(StrEqual(sWeapon, "weapon_grenade_launcher", false)){
 			new iAmmo_Launcher = 30;
 			new Handle:hGunControl_Launcher = FindConVar("l4d2_guncontrol_grenadelauncherammo");
-			if(hGunControl_Launcher != INVALID_HANDLE){
+			if(hGunControl_Launcher != null){
 				iAmmo_Launcher = GetConVarInt(hGunControl_Launcher);
 				CloseHandle(hGunControl_Launcher);
 			}

@@ -4,75 +4,97 @@
 
 #include <ps_natives>
 
-#define PLUGIN_VERSION "1.7.0"
-#define PS_ModuleName "\nBuy Extended Support Structure(BESS Module)"
+#define PLUGIN_VERSION "1.7.1"
+#define PS_ModuleName "\nBuy Extended Support Structure (BESS Module)"
 
 #define MSGTAG "\x04[PS]\x01"
 
-new Handle:h_Enable = INVALID_HANDLE;
-new Handle:h_Trie = INVALID_HANDLE;
-new bool:loaded = false;
-
-// new bool:bEnableFree = true;
-
 public Plugin:myinfo = 
 {
-	name = "[PS] Buy Extended Support Structure(BESS Module)",
+	name = "[PS] Buy Extended Support Structure",
 	author = "McFlurry && evilmaniac",
 	description = "Module to extend buy support, example: !buy pills // this would buy you pills",
 	version = PLUGIN_VERSION,
 	url = "http://www.evilmania.net"
 }
 
+new Handle:h_Trie = null;
+
+enum module_settings{
+	Float:fVersion,
+	Float:fMinLibraryVersion,
+	Handle:hEnabled,
+	bool:bModuleLoaded
+}
+new ModuleSettings[module_settings];
+
+public initPluginSettings(){
+	ModuleSettings[fVersion] = 1.71;
+	ModuleSettings[fMinLibraryVersion] = 1.77;
+	ModuleSettings[hEnabled] = CreateConVar("ps_bess_enable", "1", "Enable BESS Module", FCVAR_PLUGIN, true, 0.0, true, 1.0);
+	ModuleSettings[bModuleLoaded] = false;
+	return;
+}
+
+public registerConsoleCommands(){
+	RegConsoleCmd("sm_buy", Cmd_Buy);
+	return;
+}
+
+public bool:IsModuleActive(){
+	if(GetConVarBool(ModuleSettings[hEnabled]))
+		if(ModuleSettings[bModuleLoaded])
+			if(PS_IsSystemEnabled())
+				return true;
+	return false;
+}
+
 public OnPluginStart()
 {
-	h_Trie = CreateTrie();
 	decl String:game_name[64];
 	GetGameFolderName(game_name, sizeof(game_name));
 	if (!StrEqual(game_name, "left4dead2", false))
-	{
-		SetFailState("Plugin supports Left 4 Dead 2 only.");
-	}
-	CreateConVar("ps_bess_version", PLUGIN_VERSION, "Version of bess module", FCVAR_PLUGIN|FCVAR_DONTRECORD|FCVAR_NOTIFY|FCVAR_REPLICATED);
-	h_Enable = CreateConVar("ps_bess_enable", "1", "Enable BESS Module", FCVAR_PLUGIN, true, 0.0, true, 1.0);
-	RegConsoleCmd("sm_buy", Cmd_Buy);
-	/* RegConsoleCmd("sm_buyhelp", Cmd_Help); */
+		SetFailState("%T", "Game Check Fail", LANG_SERVER);
+	else{
+		h_Trie = CreateTrie();
+		initPluginSettings();
+		registerConsoleCommands();
 
-	AutoExecConfig(true, "ps_bess");
-	LoadTranslations("points_system.phrases");
+		AutoExecConfig(true, "ps_bess");
+		LoadTranslations("points_system.phrases");
+	}
+	return;
 }
 
-public OnAllPluginsLoaded()
-{
-	new Float:min = 1.62;
-	if(LibraryExists("ps_natives"))
-	{
-		if(PS_GetVersion() >= min)
-		{
-			if(PS_RegisterModule(PS_ModuleName)) LogMessage("[PS] Plugin of same name already registered");
-			SetUpBuyTrie();
-			loaded = true;
+public OnAllPluginsLoaded(){
+	if(LibraryExists("ps_natives")){
+		if(PS_GetVersion() >= ModuleSettings[fMinLibraryVersion]){
+			if(!PS_RegisterModule(PS_ModuleName)) // If module registeration has failed
+				LogMessage("[PS] Plugin already registered.");
+			else{
+				SetUpBuyTrie();
+				ModuleSettings[bModuleLoaded] = true;
+				return;
+			}
 		}	
 		else
-		{
-			SetFailState("[PS] Incompatible version of points system is loaded! Please update!");
-		}	
+			SetFailState("[PS] Outdated version of Points System installed.");
 	}
 	else
-	{
-		SetFailState("[PS] PS Natives aren't loaded!");
-	}	
+		SetFailState("[PS] PS Natives are not loaded.");
+
+	return;
 }
 
-public OnPluginEnd()
-{
+public OnPluginEnd(){
 	PS_UnregisterModule(PS_ModuleName);
 	CloseHandle(h_Trie);
+	return;
 }
 
-public OnPSUnloaded()
-{
-	loaded = false;
+public OnPSUnloaded(){
+	ModuleSettings[bModuleLoaded] = false;
+	return;
 }	
 
 public OnConfigsExecuted()
@@ -325,15 +347,19 @@ public removePoints(iClientIndex, iPoints){
 	return;
 }
 
-public Action:Cmd_Buy(iClientIndex, args)
+public Action:Cmd_Buy(iClientIndex, iNumArgs)
 {
-	if(!GetConVarBool(h_Enable) || !loaded || !IsClientInGame(iClientIndex) || iClientIndex > MaxClients) return Plugin_Continue;
-	if(!IsPlayerAlive(iClientIndex) && args > 0)
-	{
+	if(iNumArgs != 1)
+		return Plugin_Continue;
+
+	if(!IsModuleActive() || !IsClientInGame(iClientIndex) || iClientIndex > MaxClients)
+		return Plugin_Continue;
+
+	if(!IsPlayerAlive(iClientIndex)){
 		ReplyToCommand(iClientIndex, "[PS] Must Be Alive To Buy Items!");
 		return Plugin_Continue;
 	}	
-	if(args > 1 || args == 0) return Plugin_Continue;
+
 	new String:arg[50];
 	GetCmdArg(1, arg, sizeof(arg));
 	new String:argval[100];
@@ -410,7 +436,7 @@ public Action:Cmd_Buy(iClientIndex, args)
 	return Plugin_Continue;
 }
 
-public bool:isCarryingWeapon(iClientIndex){
+public bool:IsCarryingWeapon(iClientIndex){
 	new iWeapon = GetPlayerWeaponSlot(iClientIndex, 0);
 	if(iWeapon == -1)
 		return false;
@@ -419,7 +445,7 @@ public bool:isCarryingWeapon(iClientIndex){
 
 public reloadAmmo(iClientIndex, iCost, const String:sItem[]){
 	new hWeapon = GetPlayerWeaponSlot(iClientIndex, 0);
-	if(isCarryingWeapon(iClientIndex)){
+	if(IsCarryingWeapon(iClientIndex)){
 
 		decl String:sWeapon[40]; sWeapon[0] = '\0';
 		GetEdictClassname(hWeapon, sWeapon, sizeof(sWeapon));

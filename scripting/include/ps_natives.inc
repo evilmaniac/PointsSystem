@@ -4,6 +4,13 @@
 #define _ps
 
 /**
+ * Gets the status of the points system
+ *
+ * @return Boolean value corresponding to the status of the points system. false if disabled, true if enabled.
+*/
+native PS_IsSystemEnabled();
+
+/**
  * Gets the version of PS
  *
  * @return				current version of ps system in form of a float
