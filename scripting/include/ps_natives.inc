@@ -8,14 +8,14 @@
  *
  * @return Boolean value corresponding to the status of the points system. false if disabled, true if enabled.
 */
-native PS_IsSystemEnabled();
+native int PS_IsSystemEnabled();
 
 /**
  * Gets the version of PS
  *
  * @return				current version of ps system in form of a float
  */
-native PS_GetVersion();
+native int PS_GetVersion();
 
 /**
  * Sets a client's points
