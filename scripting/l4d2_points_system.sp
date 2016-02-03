@@ -29,7 +29,7 @@ enum plugin_settings{
 }
 new PluginSettings[plugin_settings];
 
-public initPluginSettings(){
+initPluginSettings(){
 	PluginSettings[fVersion] = 1.77;
 	PluginSettings[iStringSize] = 64;
 
@@ -52,7 +52,7 @@ enum plugin_sprites{
 }
 new PluginSprites[plugin_sprites];
 
-public initPluginSprites(){
+initPluginSprites(){
 	PluginSprites[BeamSprite] = PrecacheModel("sprites/laserbeam.vmt");
 	PluginSprites[HaloSprite] = PrecacheModel("sprites/glow01.vmt");
 	return;
@@ -75,7 +75,7 @@ enum player_data{
 }
 new PlayerData[MAXPLAYERS][player_data];
 
-public initPlayerData(iClientIndex){
+initPlayerData(iClientIndex){
 	if(iClientIndex < MAXPLAYERS){
 		PlayerData[iClientIndex][bMessageSent] 		= false;
 		PlayerData[iClientIndex][bPointsLoaded] 	= false;
@@ -106,7 +106,7 @@ enum counter_data{
 }
 new CounterData[counter_data];
 
-public initCounterData(){
+initCounterData(){
 	CounterData[iTanksSpawned] = 0;
 	CounterData[iWitchesSpawned] = 0;
 	return;
@@ -182,7 +182,7 @@ enum item_costs{
 }
 new ItemCosts[item_costs];
 
-public initItemCosts(){
+initItemCosts(){
 	ItemCosts[CostPistol] = CreateConVar("l4d2_points_pistol", "4", "How many points the pistol costs", FCVAR_PLUGIN);
 	ItemCosts[CostMagnum] = CreateConVar("l4d2_points_magnum", "6", "How many points the magnum costs", FCVAR_PLUGIN);
 	ItemCosts[CostSMG] = CreateConVar("l4d2_points_smg", "7", "How many points the smg costs", FCVAR_PLUGIN);
@@ -267,7 +267,7 @@ enum categories_enabled{
 }
 new CategoriesEnabled[categories_enabled];
 
-public initCategoriesEnabled(){
+initCategoriesEnabled(){
 	CategoriesEnabled[CategoryRifles] = CreateConVar("l4d2_points_cat_rifles", "1", "Enable rifles catergory", FCVAR_PLUGIN);
 	CategoriesEnabled[CategorySMG] = CreateConVar("l4d2_points_cat_smg", "1", "Enable smg catergory", FCVAR_PLUGIN);
 	CategoriesEnabled[CategorySnipers] = CreateConVar("l4d2_points_cat_snipers", "1", "Enable snipers catergory", FCVAR_PLUGIN);
@@ -310,7 +310,7 @@ enum point_rewards{
 }
 new PointRewards[point_rewards];
 
-public initPointRewards(){
+initPointRewards(){
 	PointRewards[SurvRewardKillSpree] = CreateConVar("l4d2_points_cikill_value", "2", "How many points does killing a certain amount of infected earn", FCVAR_PLUGIN);
 	PointRewards[SurvRewardHeadShots] = CreateConVar("l4d2_points_headshots_value", "4", "How many points does killing a certain amount of infected with headshots earn", FCVAR_PLUGIN);
 	PointRewards[SurvKillInfec] = CreateConVar("l4d2_points_sikill", "1", "How many points does killing a special infected earn", FCVAR_PLUGIN);
@@ -389,7 +389,7 @@ public Plugin:myinfo =
 	url = "http://www.evilmania.net"
 }
 
-public registerAdminCommands(){
+registerAdminCommands(){
 	RegAdminCmd("sm_listmodules", ListModules, ADMFLAG_GENERIC, "List modules currently loaded to Points System");
 	RegAdminCmd("sm_listmelee", ListMelee, ADMFLAG_GENERIC, "List melee weapons available on this map");
 	RegAdminCmd("sm_heal", Command_Heal, ADMFLAG_SLAY, "sm_heal <target>");
@@ -398,7 +398,7 @@ public registerAdminCommands(){
 	return;
 }
 
-public registerConsoleCommands(){
+registerConsoleCommands(){
 	RegConsoleCmd("sm_buystuff", BuyMenu, "Open the buy menu (only in-game)");
 	RegConsoleCmd("sm_repeatbuy", Command_RBuy, "Repeat your last buy transaction");
 	RegConsoleCmd("sm_buy", BuyMenu, "Open the buy menu (only in-game)");
@@ -406,7 +406,7 @@ public registerConsoleCommands(){
 	return;
 }
 
-public hookGameEvents(){
+hookGameEvents(){
 	HookEvent("infected_death", Event_Kill);
 	HookEvent("player_incapacitated", Event_Incap);
 	HookEvent("player_death", Event_Death);
@@ -458,21 +458,21 @@ public OnPluginStart(){
 
 // Will retreive the current gamemode and place it into sGameMode
 // sGameMode is a Character array passed by refrence.
-public getGameMode(String:sGameMode[], iSize){
+getGameMode(String:sGameMode[], iSize){
 	GetConVarString(FindConVar("mp_gamemode"), sGameMode, iSize);
 }
 
-public getAttackerIndex(Handle:hEvent){
+getAttackerIndex(Handle:hEvent){
 	new iAttackerIndex = GetClientOfUserId(GetEventInt(hEvent, "attacker"));
 	return(iAttackerIndex);
 }
 
-public getClientIndex(Handle:hEvent){
+getClientIndex(Handle:hEvent){
 	new iClientIndex = GetClientOfUserId(GetEventInt(hEvent, "userid"));
 	return(iClientIndex);
 }
 
-public bool:IsClientPlaying(iClientIndex){
+bool:IsClientPlaying(iClientIndex){
 	if(iClientIndex > 0){
 		if(IsClientConnected(iClientIndex))
 			if(IsClientInGame(iClientIndex))
@@ -482,7 +482,7 @@ public bool:IsClientPlaying(iClientIndex){
 	return false;
 }
 
-public bool:IsClientBot(iClientIndex){
+bool:IsClientBot(iClientIndex){
 	if(iClientIndex > 0){
 		if(IsClientConnected(iClientIndex))
 			if(IsFakeClient(iClientIndex))
@@ -491,7 +491,7 @@ public bool:IsClientBot(iClientIndex){
 	return false;
 }
 
-public bool:IsPlayerGhost(iClientIndex){
+bool:IsPlayerGhost(iClientIndex){
 	if(iClientIndex > 0){
 		if(GetEntData(iClientIndex, SendProp_IsGhost, 1))
 			return true;
@@ -499,7 +499,7 @@ public bool:IsPlayerGhost(iClientIndex){
 	return false;
 }
 
-public bool:IsClientTank(iClientIndex){
+bool:IsClientTank(iClientIndex){
 	if(iClientIndex > 0){
 		if(GetEntProp(iClientIndex, Prop_Send, "m_zombieClass") == 8)
 			return true;
@@ -507,7 +507,7 @@ public bool:IsClientTank(iClientIndex){
 	return false;
 }
 
-public bool:IsClientSurvivor(iClientIndex){
+bool:IsClientSurvivor(iClientIndex){
 	if(iClientIndex > 0){
 		if(GetClientTeam(iClientIndex) == 2) // Survivor
 			return true;
@@ -515,7 +515,7 @@ public bool:IsClientSurvivor(iClientIndex){
 	return false;
 }
 
-public bool:IsClientInfected(iClientIndex){
+bool:IsClientInfected(iClientIndex){
 	if(iClientIndex > 0){
 		if(GetClientTeam(iClientIndex) == 3) // Infected
 			return true;
@@ -523,7 +523,7 @@ public bool:IsClientInfected(iClientIndex){
 	return false;
 }
 
-public bool:IsModEnabled(){
+bool:IsModEnabled(){
 	if(GetConVarInt(PluginSettings[hEnabled]) == 1){
 		if(IsAllowedGameMode())
 			return true;
@@ -551,7 +551,7 @@ stock bool:IsAllowedReset(){
 	return (StrContains(sEnabledModes, sGameMode) != -1);
 }
 
-public setStartPoints(iClientIndex){
+setStartPoints(iClientIndex){
 	if(iClientIndex <= 0) 
 		return;
 
@@ -559,11 +559,7 @@ public setStartPoints(iClientIndex){
 	PlayerData[iClientIndex][iPlayerPoints] = iStartPoints;
 }
 
-public Action:reInitStartPoints(Handle:hTimer, any:iClientIndex){
-	setStartPoints(iClientIndex);
-}
-
-public addPointsToTeam(iClientIndex, iTeam, iPoints, const String:sMessage[]){
+addPointsToTeam(iClientIndex, iTeam, iPoints, const String:sMessage[]){
 	if(MaxClients >= iClientIndex){
 		if(!IsClientBot(iClientIndex))
 			if(GetClientTeam(iClientIndex) == iTeam)
@@ -573,7 +569,7 @@ public addPointsToTeam(iClientIndex, iTeam, iPoints, const String:sMessage[]){
 	return;
 }
 
-public addPoints(iClientIndex, iPoints, const String:sMessage[]){
+addPoints(iClientIndex, iPoints, const String:sMessage[]){
 	if(!IsClientBot(iClientIndex)){
 		PlayerData[iClientIndex][iPlayerPoints] += iPoints;
 		if(GetConVarBool(PluginSettings[hNotifications])){
@@ -584,7 +580,7 @@ public addPoints(iClientIndex, iPoints, const String:sMessage[]){
 	return;
 }
 
-public removePoints(iClientIndex, iPoints){
+removePoints(iClientIndex, iPoints){
 	PlayerData[iClientIndex][iPlayerPoints] -= iPoints;
 	return;
 }
@@ -875,7 +871,7 @@ public PS_GetBought(Handle:plugin, numParams)
 	SetNativeString(2, PlayerData[GetNativeCell(1)][sBought], 64);
 }
 
-public resetClientData(iClientIndex){
+resetClientData(iClientIndex){
 	setStartPoints(iClientIndex);
 
 	PlayerData[iClientIndex][iKillCount] 		= 0;
@@ -943,7 +939,7 @@ public Action:Event_Finale(Handle:hEvent, String:sEventName[], bool:bDontBroadca
 	else resetAllPlayers(1);
 }	
 
-public handleHeadshots(iClientIndex){
+handleHeadshots(iClientIndex){
 	new iHeadShotReward = GetConVarInt(PointRewards[SurvRewardHeadShots]);
 	new iHeadShotsRequired = GetConVarInt(PluginSettings[hHeadShotNum]);
 	if(iHeadShotReward > 0){
@@ -956,7 +952,7 @@ public handleHeadshots(iClientIndex){
 	return;
 }
 
-public handleKillSpree(iClientIndex){
+handleKillSpree(iClientIndex){
 	new iKillSpreeReward = GetConVarInt(PointRewards[SurvRewardKillSpree]);
 	new iKillSpreeRequired = GetConVarInt(PluginSettings[hKillSpreeNum]);
 	if(iKillSpreeReward > 0){
@@ -1024,14 +1020,14 @@ public Action:Event_Death(Handle:hEvent, const String:sEventName[], bool:bDontBr
 	return;
 }
 
-public handleTankKilled(){
+handleTankKilled(){
 	new iTankKilledReward = GetConVarInt(PointRewards[SurvKillTank]);
 	if(iTankKilledReward > 0)
 		handleTankKilledPoints(1, iTankKilledReward, "Killed Tank");
 	return;
 }
 
-public handleTankKilledPoints(iClientIndex, iPoints, const String:sMessage[]){
+handleTankKilledPoints(iClientIndex, iPoints, const String:sMessage[]){
 	if(iClientIndex > 0 && MaxClients >= iClientIndex){
 		if(!IsClientBot(iClientIndex))
 			if(IsClientInGame(iClientIndex))
@@ -1108,7 +1104,7 @@ public Action:Event_Heal(Handle:hEvent, const String:sEventName[], bool:bDontBro
 	return;
 }	
 
-public handleProtect(iClientIndex){
+handleProtect(iClientIndex){
 	new iProtectReward = GetConVarInt(PointRewards[SurvTeamProtect]);
 	if(iProtectReward > 0){
 		PlayerData[iClientIndex][iProtectCount]++;
@@ -1279,7 +1275,7 @@ public Action:Event_Burn(Handle:hEvent, const String:sEventName[], bool:bDontBro
 	return;
 }
 
-public handleSpit(iClientIndex, iPoints){
+handleSpit(iClientIndex, iPoints){
     if(PlayerData[iClientIndex][iHurtCount] >= 8){
         addPoints(iClientIndex, iPoints, "Spit Damage");
         PlayerData[iClientIndex][iHurtCount] -= 8;
@@ -1287,7 +1283,7 @@ public handleSpit(iClientIndex, iPoints){
     return;
 }
 
-public handleDamage(iClientIndex, iPoints){
+handleDamage(iClientIndex, iPoints){
     if(PlayerData[iClientIndex][iHurtCount] >= 3){
         addPoints(iClientIndex, iPoints, "Damage");
         PlayerData[iClientIndex][iHurtCount] -= 3;
@@ -1372,7 +1368,7 @@ public bool:HasEnoughPoints(iClientIndex, iCost){
 	return false;
 }
 
-public performSuicide(iClientIndex, iCost){
+performSuicide(iClientIndex, iCost){
 	if(iClientIndex > 0 && !IsClientBot(iClientIndex)){
 		if(IsClientInfected(iClientIndex)){
 			ForcePlayerSuicide(iClientIndex);
@@ -1538,7 +1534,7 @@ public Action:Command_SPoints(client, args)
 	}	
 }
 
-public execClientCommand(iClientIndex, const String:sCommand[]){
+execClientCommand(iClientIndex, const String:sCommand[]){
 	RemoveFlags();
 	FakeClientCommand(iClientIndex, sCommand);
 	AddFlags();
