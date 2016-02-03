@@ -3,11 +3,20 @@
 #include <sdktools>
 #include <clientprefs>
 
-#define PLUGIN_TITLE "1.7.7"
+#define PLUGIN_VERSION "1.7.8"
 
 #define MSGTAG "\x04[PS]\x01"
 #define MSGTAG2 "\x04[PS]\x01 "
 #define MODULES_SIZE 100
+
+public Plugin myinfo = 
+{
+	name = "Points System",
+	author = "McFlurry & evilmaniac",
+	description = "Customized edition of McFlurry's points system",
+	version = PLUGIN_VERSION,
+	url = "http://www.evilmania.net"
+}
 
 new Handle:ModulesArray = null;
 new Handle:Forward1 = null;
@@ -30,7 +39,7 @@ enum plugin_settings{
 new PluginSettings[plugin_settings];
 
 initPluginSettings(){
-	PluginSettings[fVersion] = 1.77;
+	PluginSettings[fVersion] = 1.78;
 	PluginSettings[iStringSize] = 64;
 
 	PluginSettings[hStartPoints] = CreateConVar("l4d2_points_start", "10", "Points to start each round/map with.", FCVAR_PLUGIN);
@@ -380,15 +389,6 @@ new SendProp_LifeState;
 new bool:lateload = false;
 new bool:bFirstRun = true;
 
-public Plugin:myinfo = 
-{
-	name = "Points System",
-	author = "McFlurry & evilmaniac",
-	description = "Customized edition of McFlurry's points system",
-	version = PLUGIN_TITLE,
-	url = "http://www.evilmania.net"
-}
-
 registerAdminCommands(){
 	RegAdminCmd("sm_listmodules", ListModules, ADMFLAG_GENERIC, "List modules currently loaded to Points System");
 	RegAdminCmd("sm_listmelee", ListMelee, ADMFLAG_GENERIC, "List melee weapons available on this map");
@@ -440,8 +440,7 @@ public OnPluginStart(){
 	AddMultiTargetFilter("@s", FilterSurvivors, "all Survivor players", true);
 	AddMultiTargetFilter("@infected", FilterInfected, "all Infected players", true);
 	AddMultiTargetFilter("@i", FilterInfected, "all Infected players", true);
-	//CreateConVar("l4d2_points_sys_version", PLUGIN_TITLE, "Version of Points System on this server.", FCVAR_PLUGIN|FCVAR_NOTIFY|FCVAR_DONTRECORD|FCVAR_REPLICATED);
-	CreateConVar("em_points_sys_version", PLUGIN_TITLE, "Version of Points System on this server.", FCVAR_PLUGIN|FCVAR_NOTIFY|FCVAR_DONTRECORD|FCVAR_REPLICATED);
+	CreateConVar("em_points_sys_version", PLUGIN_VERSION, "Version of Points System on this server.", FCVAR_PLUGIN|FCVAR_NOTIFY|FCVAR_DONTRECORD|FCVAR_REPLICATED);
 
 	registerAdminCommands();
 	registerConsoleCommands();
