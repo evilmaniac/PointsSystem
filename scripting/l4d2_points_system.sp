@@ -363,7 +363,7 @@ void initStructures(){
 }
 
 //melee check
-new String:meleelist[MAX_MELEE_LENGTH][20] =
+char meleelist[MAX_MELEE_LENGTH][20] =
 {
 	"cricket_bat",
 	"crowbar",
@@ -1374,7 +1374,7 @@ bool HasEnoughPoints(int iClientIndex, int iCost){
 	return false;
 }
 
-performSuicide(int iClientIndex, int iCost){
+void performSuicide(int iClientIndex, int iCost){
 	if(iClientIndex > 0 && !IsClientBot(iClientIndex)){
 		if(IsClientInfected(iClientIndex)){
 			ForcePlayerSuicide(iClientIndex);
@@ -1540,7 +1540,7 @@ public Action Command_SPoints(client, args)
 	}	
 }
 
-execClientCommand(int iClientIndex, const char[] sCommand){
+void execClientCommand(int iClientIndex, const char[] sCommand){
 	RemoveFlags();
 	FakeClientCommand(iClientIndex, sCommand);
 	AddFlags();
@@ -1550,28 +1550,30 @@ execClientCommand(int iClientIndex, const char[] sCommand){
 // Currently unmaintained code below //
 // TODO: Rewrite McFlurry's menu system
 
-RemoveFlags()
-{
-	new flagsgive = GetCommandFlags("give");
-	new flagszspawn = GetCommandFlags("z_spawn_old");
-	new flagsupgradeadd = GetCommandFlags("upgrade_add");
-	new flagspanic = GetCommandFlags("director_force_panic_event");
+void RemoveFlags(){
+	int flagsgive = GetCommandFlags("give");
+	int flagszspawn = GetCommandFlags("z_spawn_old");
+	int flagsupgradeadd = GetCommandFlags("upgrade_add");
+	int flagspanic = GetCommandFlags("director_force_panic_event");
+
 	SetCommandFlags("give", flagsgive & ~FCVAR_CHEAT);
 	SetCommandFlags("z_spawn_old", flagszspawn & ~FCVAR_CHEAT);
 	SetCommandFlags("upgrade_add", flagsupgradeadd & ~FCVAR_CHEAT);
 	SetCommandFlags("director_force_panic_event", flagspanic & ~FCVAR_CHEAT);
+	return;
 }	
 
-AddFlags()
-{
-	new flagsgive = GetCommandFlags("give");
-	new flagszspawn = GetCommandFlags("z_spawn_old");
-	new flagsupgradeadd = GetCommandFlags("upgrade_add");
-	new flagspanic = GetCommandFlags("director_force_panic_event");
+void AddFlags(){
+	int flagsgive = GetCommandFlags("give");
+	int flagszspawn = GetCommandFlags("z_spawn_old");
+	int flagsupgradeadd = GetCommandFlags("upgrade_add");
+	int flagspanic = GetCommandFlags("director_force_panic_event");
+
 	SetCommandFlags("give", flagsgive|FCVAR_CHEAT);
 	SetCommandFlags("z_spawn_old", flagszspawn|FCVAR_CHEAT);
 	SetCommandFlags("upgrade_add", flagsupgradeadd|FCVAR_CHEAT);
 	SetCommandFlags("director_force_panic_event", flagspanic|FCVAR_CHEAT);
+	return;
 }	
 
 BuildBuyMenu(client)
