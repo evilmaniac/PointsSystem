@@ -1,7 +1,7 @@
 #include <sourcemod>
 #include <sdktools>
 
-#define PLUGIN_VERSION "1.7.8"
+#define PLUGIN_VERSION "1.7.81"
 
 #define MSGTAG "\x04[PS]\x01"
 #define MODULES_SIZE 100
@@ -41,7 +41,7 @@ enum plugin_settings{
 new PluginSettings[plugin_settings];
 
 void initPluginSettings(){
-	PluginSettings[fVersion] = 1.78;
+	PluginSettings[fVersion] = 1.781;
 	PluginSettings[iStringSize] = 64;
 
 	PluginSettings[hVersion] = CreateConVar("em_points_sys_version", PLUGIN_VERSION, "Version of Points System on this server.", FCVAR_PLUGIN|FCVAR_NOTIFY|FCVAR_DONTRECORD|FCVAR_REPLICATED);
@@ -388,7 +388,7 @@ int SendProp_IsAlive;
 int SendProp_IsGhost;
 int SendProp_LifeState;
 
-bool lateload = false;
+bool bLateLoad = false;
 bool bFirstRun = true;
 
 void registerAdminCommands(){
@@ -453,7 +453,7 @@ public void OnPluginStart(){
 	SendProp_IsGhost = FindSendPropInfo("CTerrorPlayer", "m_isGhost");
 
 	AutoExecConfig(true, "l4d2_points_system");
-	if(!lateload) CreateTimer(0.5, PrecacheGuns);
+	if(!bLateLoad) CreateTimer(0.5, PrecacheGuns);
 }
 
 /**
@@ -464,6 +464,11 @@ public void OnPluginStart(){
 */
 void getGameMode(char[] sGameMode, int iSize){
 	GetConVarString(FindConVar("mp_gamemode"), sGameMode, iSize);
+	return;
+}
+
+void getGameName(char[] sGameName, int iSize){
+	GetGameFolderName(sGameName, iSize);
 	return;
 }
 
@@ -562,6 +567,7 @@ void setStartPoints(int iClientIndex){
 
 	int iStartPoints = GetConVarInt(PluginSettings[hStartPoints]);
 	PlayerData[iClientIndex][iPlayerPoints] = iStartPoints;
+	return;
 }
 
 void addPointsToTeam(int iClientIndex, int iTeam, int iPoints, const char[] sMessage){
@@ -700,10 +706,10 @@ public Action ListModules(int iClientIndex, int iNumArguments){
 	if(iNumArguments == 0){
 		ReplyToCommand(iClientIndex, "%s %T", MSGTAG, "Modules", LANG_SERVER);
 
-		int iSize = GetArraySize(ModulesArray);
-		for(int iCount = 0; iCount < iSize; iCount++){
+		int iNumModules = GetArraySize(ModulesArray);
+		for(int iModule = 0; iModule < iNumModules; iModule++){
 			char sModuleName[MODULES_SIZE];
-			GetArrayString(ModulesArray, iCount, sModuleName, MODULES_SIZE);
+			GetArrayString(ModulesArray, iModule, sModuleName, MODULES_SIZE);
 			if(strlen(sModuleName) > 0)
 				ReplyToCommand(iClientIndex, sModuleName);
 		}
@@ -711,18 +717,15 @@ public Action ListModules(int iClientIndex, int iNumArguments){
 	return Plugin_Handled;
 }
 
-public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
-{
-	char game_name[128];
-	GetGameFolderName(game_name, sizeof(game_name));
+void loadTranslationFiles(){
 	LoadTranslations("core.phrases");
 	LoadTranslations("common.phrases");
 	LoadTranslations("points_system.phrases");
 	LoadTranslations("points_system_menus.phrases");
-	if(!StrEqual(game_name, "left4dead2", false))
-	{
-		SetFailState("%T", "Game Check Fail", LANG_SERVER);
-	}
+	return;
+}
+
+void createNatives(){
 	CreateNative("PS_IsSystemEnabled", Native_PS_IsSystemEnabled);
 	CreateNative("PS_GetVersion", Native_PS_GetVersion);
 	CreateNative("PS_SetPoints", Native_PS_SetPoints);
@@ -742,7 +745,31 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 	Forward1 = CreateGlobalForward("OnPSLoaded", ET_Ignore);
 	Forward2 = CreateGlobalForward("OnPSUnloaded", ET_Ignore);
 	RegPluginLibrary("ps_natives");
-	lateload = late;
+
+	return;
+}
+
+/**
+ * @link https://sm.alliedmods.net/new-api/sourcemod/AskPluginLoad2
+ *
+ * @param hPlugin Handle to the plugin.
+ * @param bLate Whether or not the plugin was loaded "late" (after map load).
+ * @param sError Error message buffer in case load failed.
+ * @param iErrorSize Maximum number of characters for error message buffer.
+ *
+ * @return APLRes_Success for load success, APLRes_Failure or APLRes_SilentFailure otherwise
+ */
+public APLRes:AskPluginLoad2(Handle hPlugin, bool bLate, char[] sError, int iErrorSize){
+	loadTranslationFiles();
+
+	char sGameName[15];
+	getGameName(sGameName, sizeof(sGameName));
+	if(!StrEqual(sGameName, "left4dead2", false))
+		SetFailState("%T", "Game Check Fail", LANG_SERVER);
+
+	createNatives();
+
+	bLateLoad = bLate;
 	return APLRes_Success;
 }
 
@@ -754,7 +781,7 @@ public void OnPluginEnd()
 }	
 
 public int Native_PS_IsSystemEnabled(Handle hPlugin, int iNumArguments){
-	return (GetConVarInt(PluginSettings[hEnabled]) == 1);
+	return (IsModEnabled());
 }
 
 public int Native_PS_RemovePoints(Handle hPlugin, int iNumArguments){
@@ -856,7 +883,7 @@ public int Native_PS_GetBought(Handle hPlugin, int iNumArguments)
 	SetNativeString(2, PlayerData[GetNativeCell(1)][sBought], 64);
 }
 
-resetClientData(int iClientIndex){
+void resetClientData(int iClientIndex){
 	setStartPoints(iClientIndex);
 
 	PlayerData[iClientIndex][iKillCount] 		= 0;
@@ -864,6 +891,7 @@ resetClientData(int iClientIndex){
 	PlayerData[iClientIndex][iProtectCount] 	= 0;
 	PlayerData[iClientIndex][iHeadShotCount] 	= 0;
 	PlayerData[iClientIndex][bMessageSent] 		= false;
+	return;
 }
 
 public Action Check(Handle hTimer, int iClientIndex){
@@ -871,7 +899,7 @@ public Action Check(Handle hTimer, int iClientIndex){
 		resetClientData(iClientIndex);
 }
 
-public OnClientAuthorized(int iClientIndex, const char[] sSteamID){
+public void OnClientAuthorized(int iClientIndex, const char[] sSteamID){
 	if(IsClientBot(iClientIndex))
 		return;
 	else{
@@ -880,7 +908,7 @@ public OnClientAuthorized(int iClientIndex, const char[] sSteamID){
 	}
 }
 
-public OnClientDisconnect(int iClientIndex){
+public void OnClientDisconnect(int iClientIndex){
 	if(IsClientBot(iClientIndex))
 		return;
 	else{
@@ -890,7 +918,7 @@ public OnClientDisconnect(int iClientIndex){
 	}
 }
 
-public resetAllPlayers(int iClientIndex){ // Check if 0
+void resetAllPlayers(int iClientIndex){ // Check if 0
 	if(MaxClients >= iClientIndex){
 		resetClientData(iClientIndex);
 		resetAllPlayers(++iClientIndex);
@@ -926,7 +954,7 @@ public Action Event_Finale(Handle hEvent, char[] sEventName, bool bDontBroadcast
 	else resetAllPlayers(1);
 }	
 
-handleHeadshots(int iClientIndex){
+void handleHeadshots(int iClientIndex){
 	int iHeadShotReward = GetConVarInt(PointRewards[SurvRewardHeadShots]);
 	int iHeadShotsRequired = GetConVarInt(PluginSettings[hHeadShotNum]);
 	if(iHeadShotReward > 0){
@@ -939,7 +967,7 @@ handleHeadshots(int iClientIndex){
 	return;
 }
 
-handleKillSpree(int iClientIndex){
+void handleKillSpree(int iClientIndex){
 	int iKillSpreeReward = GetConVarInt(PointRewards[SurvRewardKillSpree]);
 	int iKillSpreeRequired = GetConVarInt(PluginSettings[hKillSpreeNum]);
 	if(iKillSpreeReward > 0){
@@ -1007,14 +1035,14 @@ public Action Event_Death(Handle hEvent, const char[] sEventName, bool bDontBroa
 	return;
 }
 
-handleTankKilled(){
+void handleTankKilled(){
 	int iTankKilledReward = GetConVarInt(PointRewards[SurvKillTank]);
 	if(iTankKilledReward > 0)
 		handleTankKilledPoints(1, iTankKilledReward, "Killed Tank");
 	return;
 }
 
-handleTankKilledPoints(int iClientIndex, int iPoints, const char[] sMessage){
+void handleTankKilledPoints(int iClientIndex, int iPoints, const char[] sMessage){
 	if(iClientIndex > 0 && MaxClients >= iClientIndex){
 		if(!IsClientBot(iClientIndex))
 			if(IsClientInGame(iClientIndex))
