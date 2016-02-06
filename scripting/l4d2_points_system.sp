@@ -560,7 +560,7 @@ void setStartPoints(int iClientIndex){
 	if(iClientIndex <= 0) 
 		return;
 
-	new iStartPoints = GetConVarInt(PluginSettings[hStartPoints]);
+	int iStartPoints = GetConVarInt(PluginSettings[hStartPoints]);
 	PlayerData[iClientIndex][iPlayerPoints] = iStartPoints;
 }
 
@@ -590,29 +590,19 @@ void removePoints(int iClientIndex, int iPoints){
 	return;
 }
 
-public bool FilterSurvivors(const char[] pattern, Handle clients)
-{
-	for(new i=1;i<=MaxClients;i++)
-	{
-		if(IsClientInGame(i) && GetClientTeam(i) == 2)
-		{
-			PushArrayCell(clients, i);
-		}
-	}
+public bool FilterSurvivors(const char[] sPattern, Handle hClients){
+	for(int iClientIndex = 1; iClientIndex <= MaxClients; iClientIndex++)
+		if(IsClientInGame(iClientIndex) && IsClientSurvivor(iClientIndex))
+			PushArrayCell(hClients, iClientIndex);
 	return true;
 }	
 
-public bool FilterInfected(const char[] pattern, Handle clients)
-{
-	for(new i=1;i<=MaxClients;i++)
-	{
-		if(IsClientInGame(i) && GetClientTeam(i) == 3)
-		{
-			PushArrayCell(clients, i);
-		}
-	}
+public bool FilterInfected(const char[] sPattern, Handle hClients){
+	for(int iClientIndex = 1; iClientIndex <= MaxClients; iClientIndex++)
+		if(IsClientInGame(iClientIndex) && IsClientInfected(iClientIndex))
+			PushArrayCell(hClients, iClientIndex);
 	return true;
-}	
+}
 
 public Action PrecacheGuns(Handle Timer)
 {
@@ -633,16 +623,15 @@ public Action PrecacheGuns(Handle Timer)
 	}	
 }
 
-stock DispatchAndRemove(const String:gun[])
-{
-	new ent = CreateEntityByName(gun);	
-	if(IsValidEdict(ent))
-	{
-		DispatchSpawn(ent);
-		RemoveEdict(ent);
+stock DispatchAndRemove(const char[] sGun){
+	int iEntity = CreateEntityByName(sGun);	
+	if(IsValidEdict(iEntity)){
+		DispatchSpawn(iEntity);
+		RemoveEdict(iEntity);
 		return true;
 	}
-	else return false;
+	else
+		return false;
 }	
 
 public void OnAllPluginsLoaded(){
@@ -652,17 +641,13 @@ public void OnAllPluginsLoaded(){
 	return;
 }	
 
-public void OnConfigsExecuted()
-{
-	if(bFirstRun)
-	{
-		for(new i=0;i<=MaxClients;i++)
-		{
-			setStartPoints(i);
-			//points[i] = GetConVarInt(StartPoints);
-		}
+public void OnConfigsExecuted(){
+	if(bFirstRun){
+		for(int iClientIndex = 1; iClientIndex <= MaxClients; iClientIndex++)
+			setStartPoints(iClientIndex);
 		bFirstRun = false;
 	}
+	return;
 }
 
 public void OnMapStart()
@@ -683,27 +668,25 @@ public void OnMapStart()
 	CreateTimer(6.0, CheckMelee, _, TIMER_FLAG_NO_MAPCHANGE);
 }	
 
-public Action CheckMelee(Handle Timer)
+public Action CheckMelee(Handle hTimer)
 {
-	new mCounter;
-	for(new i=0;i<MAX_MELEE_LENGTH;i++)
-	{
+	int mCounter;
+	for(int i = 0; i < MAX_MELEE_LENGTH; i++)
 		Format(validmelee[i], sizeof(validmelee[]), "");
-	}
-	for(new i=0;i<MAX_MELEE_LENGTH;i++)
-	{
-		new entity = CreateEntityByName("weapon_melee");
-		DispatchKeyValue(entity, "melee_script_name", meleelist[i]);
-		DispatchSpawn(entity);
+
+	for(int i = 0; i < MAX_MELEE_LENGTH; i++){
+		int iEntity = CreateEntityByName("weapon_melee");
+		DispatchKeyValue(iEntity, "melee_script_name", meleelist[i]);
+		DispatchSpawn(iEntity);
+
 		decl String:modelname[256];
-		GetEntPropString(entity, Prop_Data, "m_ModelName", modelname, sizeof(modelname));
+		GetEntPropString(iEntity, Prop_Data, "m_ModelName", modelname, sizeof(modelname));
 		if(StrContains(modelname, "hunter", false) == -1)
-		{
 			Format(validmelee[mCounter++], sizeof(validmelee[]), meleelist[i]);
-		}
-		RemoveEdict(entity);
+		
+		RemoveEdict(iEntity);
 	}
-}	
+}
 
 public Action ListMelee(int iClientIndex, int iNumArguments){
 	if(iNumArguments == 0){
@@ -730,7 +713,7 @@ public Action ListModules(int iClientIndex, int iNumArguments){
 
 public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 {
-	new String:game_name[128];
+	char game_name[128];
 	GetGameFolderName(game_name, sizeof(game_name));
 	LoadTranslations("core.phrases");
 	LoadTranslations("common.phrases");
@@ -779,41 +762,40 @@ public int Native_PS_RemovePoints(Handle hPlugin, int iNumArguments){
 	return;
 }
 
-public Native_PS_RegisterModule(Handle:plugin, numParams)
-{
-	new size = GetArraySize(ModulesArray);
-	decl String:test[MODULES_SIZE];
-	GetNativeString(1, test, MODULES_SIZE);
-	for(new i; i<size; i++)
-	{
-		decl String:buffer[MODULES_SIZE];
-		GetArrayString(ModulesArray, i, buffer, MODULES_SIZE);
-		if(StrEqual(buffer, test))
-		{
-			return false;
-		}	
-	}
-	PushArrayString(ModulesArray, test);
-	return true;
-}	
+public Native_PS_RegisterModule(Handle hPlugin, int iNumArguments){
+	int iNumModules = GetArraySize(ModulesArray);
 
-public Native_PS_UnregisterModule(Handle:plugin, numParams)
-{
-	new size = GetArraySize(ModulesArray);
-	new String:container[MODULES_SIZE];
-	GetNativeString(1, container, MODULES_SIZE);
-	for(new i; i<size; i++)
-	{
-		decl String:buffer[MODULES_SIZE];
-		GetArrayString(ModulesArray, i, buffer, MODULES_SIZE);
-		if(StrEqual(buffer, container))
-		{
-			RemoveFromArray(ModulesArray, i);
+	decl String:sNewModuleName[MODULES_SIZE];
+	GetNativeString(1, sNewModuleName, MODULES_SIZE);
+
+	// Make sure the module is not already loaded
+	for(int iModule = 0; iModule < iNumModules; iModule++){
+		decl String:sModuleName[MODULES_SIZE];
+		GetArrayString(ModulesArray, iModule, sModuleName, MODULES_SIZE);
+		if(StrEqual(sModuleName, sNewModuleName))
+			return false;
+	}
+
+	PushArrayString(ModulesArray, sNewModuleName);
+	return true;
+}
+
+public Native_PS_UnregisterModule(Handle hPlugin, int iNumArguments){
+	int iNumModules = GetArraySize(ModulesArray);
+
+	decl String:sUnloadModuleName[MODULES_SIZE];
+	GetNativeString(1, sUnloadModuleName, MODULES_SIZE);
+
+	for(int iModule = 0; iModule < iNumModules; iModule++){
+		decl String:sModuleName[MODULES_SIZE];
+		GetArrayString(ModulesArray, iModule, sModuleName, MODULES_SIZE);
+		if(StrEqual(sModuleName, sUnloadModuleName)){
+			RemoveFromArray(ModulesArray, iModule);
 			return true;
 		}
 	}
 	return false;
-}	
+}
 
 public int Native_PS_GetVersion(Handle hPlugin, int iNumArguments){
 	return _:PluginSettings[fVersion];
@@ -1303,15 +1285,15 @@ bool IsSpitterDamage(int iDamageType){
 }
 
 public Action Event_Hurt(Handle hEvent, const char[] sEventName, bool bDontBroadcast){
-    new iVictimIndex = getClientIndex(hEvent);
-    new iAttackerIndex = getAttackerIndex(hEvent);
+    int iVictimIndex = getClientIndex(hEvent);
+    int iAttackerIndex = getAttackerIndex(hEvent);
 
     if(IsModEnabled() && !IsClientBot(iAttackerIndex)){
 		if(IsClientInfected(iAttackerIndex) && IsClientSurvivor(iVictimIndex)){
 			PlayerData[iAttackerIndex][iHurtCount]++;
-			new iSurvivorDamagedReward = GetConVarInt(PointRewards[InfecHurtSurv]);
+			int iSurvivorDamagedReward = GetConVarInt(PointRewards[InfecHurtSurv]);
 			if(iSurvivorDamagedReward > 0){
-				new iDamageType = GetEventInt(hEvent, "type");
+				int iDamageType = GetEventInt(hEvent, "type");
 				if(IsSpitterDamage(iDamageType))
 					handleSpit(iAttackerIndex, iSurvivorDamagedReward);
 				else{
