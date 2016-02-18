@@ -1,7 +1,7 @@
 #include <sourcemod>
 #include <sdktools>
 
-#define PLUGIN_VERSION "1.7.81"
+#define PLUGIN_VERSION "1.7.9"
 
 #define MSGTAG "\x04[PS]\x01"
 #define MODULES_SIZE 100
@@ -41,7 +41,7 @@ enum plugin_settings{
 new PluginSettings[plugin_settings];
 
 void initPluginSettings(){
-	PluginSettings[fVersion] = 1.781;
+	PluginSettings[fVersion] = 1.79;
 	PluginSettings[iStringSize] = 64;
 
 	PluginSettings[hVersion] = CreateConVar("em_points_sys_version", PLUGIN_VERSION, "Version of Points System on this server.", FCVAR_PLUGIN|FCVAR_NOTIFY|FCVAR_DONTRECORD|FCVAR_REPLICATED);
@@ -1387,11 +1387,7 @@ void performSuicide(int iClientIndex, int iCost){
 	if(iClientIndex > 0 && !IsClientBot(iClientIndex)){
 		if(IsClientInfected(iClientIndex)){
 			ForcePlayerSuicide(iClientIndex);
-
-			if(IsClientTank(iClientIndex))
-				return;
-			else
-				removePoints(iClientIndex, iCost);
+			removePoints(iClientIndex, iCost);
 		}
 	}
 	return;
@@ -2673,10 +2669,7 @@ public InfectedMenu(Handle:hMenu, MenuAction:action, iClientIndex, iPosition)
 			else if (StrEqual(sItem, "suicide", false))
 			{
 				strcopy(PlayerData[iClientIndex][sItemName], 64, "suicide");
-				if(IsClientTank(iClientIndex))
-					PlayerData[iClientIndex][iItemCost] = 0;
-				else
-					PlayerData[iClientIndex][iItemCost] = GetConVarInt(ItemCosts[CostSuicide]);
+				PlayerData[iClientIndex][iItemCost] = GetConVarInt(ItemCosts[CostSuicide]);
 			}		
 			else if (StrEqual(sItem, "boomer", false))
 			{

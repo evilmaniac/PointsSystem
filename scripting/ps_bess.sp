@@ -4,7 +4,7 @@
 
 #include <ps_natives>
 
-#define PLUGIN_VERSION "1.7.1"
+#define PLUGIN_VERSION "1.7.2"
 #define PS_ModuleName "\nBuy Extended Support Structure (BESS Module)"
 
 #define MSGTAG "\x04[PS]\x01"
@@ -523,9 +523,6 @@ public performSuicide(iClientIndex, iCost){
 		if(hasEnoughPoints(iClientIndex, iCost)){
 			if(IsClientInGame(iClientIndex) && IsPlayerAlive(iClientIndex)){
 				ForcePlayerSuicide(iClientIndex);
-				if(IsClientTank(iClientIndex))
-					return;
-				else
 				removePoints(iClientIndex, iCost);
 			}
 		}
