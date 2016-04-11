@@ -7,15 +7,15 @@
  * Gets the status of the points system
  *
  * @return Boolean value corresponding to the status of the points system. false if disabled, true if enabled.
-*/
-native int PS_IsSystemEnabled();
+ */
+native bool PS_IsSystemEnabled();
 
 /**
  * Gets the version of PS
  *
  * @return				current version of ps system in form of a float
  */
-native int PS_GetVersion();
+native float PS_GetVersion();
 
 /**
  * Sets a client's points
@@ -24,7 +24,7 @@ native int PS_GetVersion();
  * @param newval			new value of a client's points
  * @return				none
  */
-native PS_SetPoints(client, newval);
+native void PS_SetPoints(int iClientIndex, int iPoints);
 
 /**
  * Deduct's points from client
@@ -33,7 +33,7 @@ native PS_SetPoints(client, newval);
  * @param iCost				Points to deduct
  * @return					none
  */
-native PS_RemovePoints(iClientIndex, iCost);
+native void PS_RemovePoints(int iClientIndex, int iCost);
 
 /**
  * Sets a client's item string
@@ -42,7 +42,7 @@ native PS_RemovePoints(iClientIndex, iCost);
  * @param newstring			new value of a client's item string
  * @return				none
  */
-native PS_SetItem(client, String:newstring[]);
+native void PS_SetItem(int iClientIndex, const char[] sPurchaseCmd);
 
 /**
  * Sets a client's item cost
@@ -51,7 +51,7 @@ native PS_SetItem(client, String:newstring[]);
  * @param newval			new value of a client's points
  * @return				none
  */
-native PS_SetCost(client, newval);
+native void PS_SetCost(int iClientIndex, int iPoints);
 
 /**
  * Sets a client's bought string
@@ -60,7 +60,7 @@ native PS_SetCost(client, newval);
  * @param newstring			new value of a client's bought string
  * @return				none
  */
-native PS_SetBought(client, String:newstring[]);
+native void PS_SetBought(int iClientIndex, const char[] sPurchaseCmd);
 
 /**
  * Sets a client's bought cost
@@ -69,7 +69,7 @@ native PS_SetBought(client, String:newstring[]);
  * @param newval			new value of a client's points
  * @return				none
  */
-native PS_SetBoughtCost(client, newval);
+native void PS_SetBoughtCost(int iClientIndex, int iCost);
 
 /**
  * Sets up an uncommon mob
@@ -77,7 +77,7 @@ native PS_SetBoughtCost(client, newval);
  * @param newval		amount of uncommon to spawn
  * @return				none
  */
-native PS_SetupUMob(newval);
+native void PS_SetupUMob(int iNumUCommon);
 
 /**
  * Gets a client's bought cost
@@ -85,7 +85,7 @@ native PS_SetupUMob(newval);
  * @param client			client index
  * @return				boughtcost
  */
-native PS_GetBoughtCost(client);
+native int PS_GetBoughtCost(int iClientIndex);
 
 /**
  * Gets a client's points
@@ -93,7 +93,7 @@ native PS_GetBoughtCost(client);
  * @param client			client index
  * @return				points
  */
-native PS_GetPoints(client);
+native int PS_GetPoints(int iClientIndex);
 
 /**
  * Gets a client's current item cost
@@ -101,7 +101,7 @@ native PS_GetPoints(client);
  * @param client			client index
  * @return				cost
  */
-native PS_GetCost(client);
+native int PS_GetCost(int iClientIndex);
 
 /**
  * Gets a client's current item
@@ -110,7 +110,7 @@ native PS_GetCost(client);
  * @param dest				destination for the item string to go
  * @return				cost
  */
-native PS_GetItem(client, String:dest[]);
+native int PS_GetItem(int iClientIndex, char[] sItem);
 
 /**
  * Gets a client's current bought item
@@ -119,7 +119,7 @@ native PS_GetItem(client, String:dest[]);
  * @param dest			destination for the bought string to go
  * @return				cost
  */
-native PS_GetBought(client, String:dest[]);
+native int PS_GetBought(int iClientIndex, char[] sItem);
 
 /**
  * Registers a module for points system
@@ -127,28 +127,28 @@ native PS_GetBought(client, String:dest[]);
  * @param modulename	String that contains the module to be registered's name
  * @return				false if successful true if already registered
  */
- native bool:PS_RegisterModule(String:modulename[]);
+ native bool PS_RegisterModule(char[] sModuleName);
  
  /**
- * Unregisters a module for points system
- *
- * @param modulename	String that contains the module to be unregistered's name
- * @return				none
- */
- native PS_UnregisterModule(String:modulename[]);
+  * Unregisters a module for points system
+  *
+  * @param modulename	String that contains the module to be unregistered's name
+  * @return				none
+  */
+ native void PS_UnregisterModule(char[] sModuleName);
  
-  /**
- * Called when Points System is loaded
- *
- * @param late			if PS was late loaded this will be true
- * @return				none
- */
- forward OnPSLoaded(bool:late);
+ /**
+  * Called when Points System is loaded
+  *
+  * @param late			if PS was late loaded this will be true
+  * @return				none
+  */
+ forward void OnPSLoaded(bool bLate);
  
-  /**
- * Called when Points System is unloaded
- *
- * @param late			if PS was late loaded this will be true
- * @return				none
- */
- forward OnPSUnloaded();
+ /**
+  * Called when Points System is unloaded
+  *
+  * @param late			if PS was late loaded this will be true
+  * @return				none
+  */
+ forward void OnPSUnloaded();
