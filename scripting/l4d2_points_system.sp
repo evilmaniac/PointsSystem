@@ -1,7 +1,7 @@
 #include <sourcemod>
 #include <sdktools>
 
-#define PLUGIN_VERSION "1.7.9"
+#define PLUGIN_VERSION "1.8.0"
 
 #define MSGTAG "\x04[PS]\x01"
 #define MODULES_SIZE 100
@@ -10,7 +10,7 @@
 #pragma semicolon 1
 //#pragma newdecls required
 
-public Plugin myinfo = 
+public Plugin myinfo =
 {
 	name = "Points System",
 	author = "McFlurry & evilmaniac",
@@ -41,7 +41,7 @@ enum plugin_settings{
 new PluginSettings[plugin_settings];
 
 void initPluginSettings(){
-	PluginSettings[fVersion] = 1.79;
+	PluginSettings[fVersion] = 1.80;
 	PluginSettings[iStringSize] = 64;
 
 	PluginSettings[hVersion] = CreateConVar("em_points_sys_version", PLUGIN_VERSION, "Version of Points System on this server.", FCVAR_PLUGIN|FCVAR_NOTIFY|FCVAR_DONTRECORD|FCVAR_REPLICATED);
@@ -429,7 +429,7 @@ void hookGameEvents(){
 	HookEvent("round_end", Event_REnd);
 	HookEvent("round_start", Event_RStart);
 	HookEvent("finale_win", Event_Finale);
-	return;	
+	return;
 }
 
 public void OnPluginStart(){
@@ -562,7 +562,7 @@ stock bool IsAllowedReset(){
 }
 
 void setStartPoints(int iClientIndex){
-	if(iClientIndex <= 0) 
+	if(iClientIndex <= 0)
 		return;
 
 	int iStartPoints = GetConVarInt(PluginSettings[hStartPoints]);
@@ -601,7 +601,7 @@ public bool FilterSurvivors(const char[] sPattern, Handle hClients){
 		if(IsClientInGame(iClientIndex) && IsClientSurvivor(iClientIndex))
 			PushArrayCell(hClients, iClientIndex);
 	return true;
-}	
+}
 
 public bool FilterInfected(const char[] sPattern, Handle hClients){
 	for(int iClientIndex = 1; iClientIndex <= MaxClients; iClientIndex++)
@@ -626,11 +626,11 @@ public Action PrecacheGuns(Handle Timer)
 	{
 		LogError("Plugin failed to initialize a CS:S weapon, consult developer!");
 		ForceChangeLevel(map, "Initialize CS:S weapons");
-	}	
+	}
 }
 
 stock DispatchAndRemove(const char[] sGun){
-	int iEntity = CreateEntityByName(sGun);	
+	int iEntity = CreateEntityByName(sGun);
 	if(IsValidEdict(iEntity)){
 		DispatchSpawn(iEntity);
 		RemoveEdict(iEntity);
@@ -638,14 +638,14 @@ stock DispatchAndRemove(const char[] sGun){
 	}
 	else
 		return false;
-}	
+}
 
 public void OnAllPluginsLoaded(){
 	//forward
 	Call_StartForward(Forward1);
 	Call_Finish();
 	return;
-}	
+}
 
 public void OnConfigsExecuted(){
 	if(bFirstRun){
@@ -672,7 +672,7 @@ public void OnMapStart()
 	initPluginSprites();
 	GetCurrentMap(MapName, sizeof(MapName));
 	CreateTimer(6.0, CheckMelee, _, TIMER_FLAG_NO_MAPCHANGE);
-}	
+}
 
 public Action CheckMelee(Handle hTimer)
 {
@@ -689,7 +689,7 @@ public Action CheckMelee(Handle hTimer)
 		GetEntPropString(iEntity, Prop_Data, "m_ModelName", modelname, sizeof(modelname));
 		if(StrContains(modelname, "hunter", false) == -1)
 			Format(validmelee[mCounter++], sizeof(validmelee[]), meleelist[i]);
-		
+
 		RemoveEdict(iEntity);
 	}
 }
@@ -697,7 +697,7 @@ public Action CheckMelee(Handle hTimer)
 public Action ListMelee(int iClientIndex, int iNumArguments){
 	if(iNumArguments == 0){
 		for(int iCount = 0; iCount < MAX_MELEE_LENGTH; iCount++)
-			if(strlen(validmelee[iCount]) > 0) ReplyToCommand(iClientIndex, validmelee[iCount]);	
+			if(strlen(validmelee[iCount]) > 0) ReplyToCommand(iClientIndex, validmelee[iCount]);
 	}
 	return;
 }
@@ -778,7 +778,7 @@ public void OnPluginEnd()
 	Action result;
 	Call_StartForward(Forward2);
 	Call_Finish(result);
-}	
+}
 
 public int Native_PS_IsSystemEnabled(Handle hPlugin, int iNumArguments){
 	return (IsModEnabled());
@@ -826,12 +826,12 @@ public Native_PS_UnregisterModule(Handle hPlugin, int iNumArguments){
 
 public int Native_PS_GetVersion(Handle hPlugin, int iNumArguments){
 	return _:PluginSettings[fVersion];
-}	
+}
 
 public int Native_PS_SetPoints(Handle hPlugin, int iNumArguments)
 {
 	PlayerData[GetNativeCell(1)][iPlayerPoints] = GetNativeCell(2);
-}	
+}
 
 public int Native_PS_SetItem(Handle hPlugin, int iNumArguments)
 {
@@ -851,27 +851,27 @@ public int Native_PS_SetBought(Handle hPlugin, int iNumArguments)
 public int Native_PS_SetBoughtCost(Handle hPlugin, int iNumArguments)
 {
 	PlayerData[GetNativeCell(1)][iBoughtCost] = GetNativeCell(2);
-}	
+}
 
 public int Native_PS_SetupUMob(Handle hPlugin, int iNumArguments)
 {
 	CounterData[iUCommonLeft] = GetNativeCell(1);
-}	
+}
 
 public int Native_PS_GetPoints(Handle hPlugin, int iNumArguments)
 {
 	return PlayerData[GetNativeCell(1)][iPlayerPoints];
-}	
+}
 
 public int Native_PS_GetCost(Handle hPlugin, int iNumArguments)
 {
 	return PlayerData[GetNativeCell(1)][iItemCost];
-}	
+}
 
 public int Native_PS_GetBoughtCost(Handle hPlugin, int iNumArguments)
 {
 	return PlayerData[GetNativeCell(1)][iBoughtCost];
-}	
+}
 
 public int Native_PS_GetItem(Handle hPlugin, int iNumArguments)
 {
@@ -932,7 +932,7 @@ public Action Event_REnd(Handle hEvent, char[] sEventName, bool bDontBroadcast){
 
 	initCounterData();
 	return;
-}	
+}
 
 public Action Event_RStart(Handle hEvent, char[] sEventName, bool bDontBroadcast){
 	if (!IsModelPrecached("models/w_models/weapons/w_m60.mdl")) PrecacheModel("models/w_models/weapons/w_m60.mdl");
@@ -943,16 +943,16 @@ public Action Event_RStart(Handle hEvent, char[] sEventName, bool bDontBroadcast
 
 	initCounterData();
 	return;
-}	
+}
 
 public Action Event_Finale(Handle hEvent, char[] sEventName, bool bDontBroadcast){
 	decl String:sGameMode[40]; sGameMode[0] = '\0';
 	getGameMode(sGameMode, sizeof(sGameMode));
 
-	if(StrContains(sGameMode, "versus", false) != -1) 
+	if(StrContains(sGameMode, "versus", false) != -1)
 		return;
 	else resetAllPlayers(1);
-}	
+}
 
 void handleHeadshots(int iClientIndex){
 	int iHeadShotReward = GetConVarInt(PointRewards[SurvRewardHeadShots]);
@@ -1005,7 +1005,7 @@ public Action Event_Incap(Handle hEvent, const char[] sEventName, bool bDontBroa
 		}
 	}
 	return;
-}	
+}
 
 public Action Event_Death(Handle hEvent, const char[] sEventName, bool bDontBroadcast){
 	int iAttackerIndex = getAttackerIndex(hEvent);
@@ -1072,7 +1072,7 @@ public Action Event_TankDeath(Handle hEvent, const char[] sEventName, bool bDont
 	}
 	PlayerData[iAttackerIndex][bTankBurning] = false;
 	return;
-}	
+}
 
 public Action Event_WitchDeath(Handle hEvent, const char[] sEventName, bool bDontBroadcast){
 	bool bOneShot = GetEventBool(hEvent, "oneshot");
@@ -1093,7 +1093,7 @@ public Action Event_WitchDeath(Handle hEvent, const char[] sEventName, bool bDon
 	}
 	PlayerData[iClientIndex][bWitchBurning] = false;
 	return;
-}	
+}
 
 public Action Event_Heal(Handle hEvent, const char[] sEventName, bool bDontBroadcast){
 	int iHealthRestored = GetEventInt(hEvent, "health_restored");
@@ -1117,7 +1117,7 @@ public Action Event_Heal(Handle hEvent, const char[] sEventName, bool bDontBroad
 		}
 	}
 	return;
-}	
+}
 
 void handleProtect(int iClientIndex){
 	int iProtectReward = GetConVarInt(PointRewards[SurvTeamProtect]);
@@ -1154,7 +1154,7 @@ public Action Event_Revive(Handle hEvent, const char[] sEventName, bool bDontBro
 				if(bLedgeRevive){
 					int iLedgeReviveReward = GetConVarInt(PointRewards[SurvTeamLedge]);
 					if(iLedgeReviveReward > 0)
-						addPoints(iClientIndex, iLedgeReviveReward, "Ledge Revive");	
+						addPoints(iClientIndex, iLedgeReviveReward, "Ledge Revive");
 				}
 				else{
 					int iReviveReward = GetConVarInt(PointRewards[SurvTeamRevive]);
@@ -1166,7 +1166,7 @@ public Action Event_Revive(Handle hEvent, const char[] sEventName, bool bDontBro
 		}
 	}
 	return;
-}	
+}
 
 public Action Event_Shock(Handle: hEvent, const char[] sEventName, bool bDontBroadcast){ // Defib
 	int iClientIndex = getClientIndex(hEvent);
@@ -1178,7 +1178,7 @@ public Action Event_Shock(Handle: hEvent, const char[] sEventName, bool bDontBro
 		}
 	}
 	return;
-}	
+}
 
 public Action Event_Choke(Handle: hEvent, const char[] sEventName, bool bDontBroadcast){
 	int iClientIndex = getClientIndex(hEvent);
@@ -1211,7 +1211,7 @@ public Action Event_Boom(Handle: hEvent, const char[] sEventName, bool bDontBroa
 		}
 	}
 	return;
-}	
+}
 
 public Action Event_Pounce(Handle: hEvent, const char[] sEventName, bool bDontBroadcast){
 	int iClientIndex = getClientIndex(hEvent);
@@ -1223,7 +1223,7 @@ public Action Event_Pounce(Handle: hEvent, const char[] sEventName, bool bDontBr
 		}
 	}
 	return;
-}	
+}
 
 public Action Event_Ride(Handle: hEvent, const char[] sEventName, bool bDontBroadcast){
 	int iClientIndex = getClientIndex(hEvent);
@@ -1259,7 +1259,7 @@ public Action Event_Impact(Handle: hEvent, const char[] sEventName, bool bDontBr
 		}
 	}
 	return;
-}	
+}
 
 public Action Event_Burn(Handle: hEvent, const char[] sEventName, bool bDontBroadcast){
 	decl String:sVictimName[30]; sVictimName[0] = '\0';
@@ -1306,6 +1306,12 @@ void handleDamage(int iClientIndex, int iPoints){
     return;
 }
 
+bool IsFireDamage(int iDamageType){
+	if(iDamageType == 8 || iDamageType == 2056)
+		return true;
+	else return false;
+}
+
 bool IsSpitterDamage(int iDamageType){
     if(iDamageType == 263168 || iDamageType == 265216)
         return true;
@@ -1322,7 +1328,9 @@ public Action Event_Hurt(Handle hEvent, const char[] sEventName, bool bDontBroad
 			int iSurvivorDamagedReward = GetConVarInt(PointRewards[InfecHurtSurv]);
 			if(iSurvivorDamagedReward > 0){
 				int iDamageType = GetEventInt(hEvent, "type");
-				if(IsSpitterDamage(iDamageType))
+				if(IsFireDamage(iDamageType)) // If infected is dealing fire damage, ignore
+					return;
+				else if(IsSpitterDamage(iDamageType))
 					handleSpit(iAttackerIndex, iSurvivorDamagedReward);
 				else{
 					if(!IsSpitterDamage(iDamageType))
@@ -1421,7 +1429,7 @@ public Action Command_Heal(client, args)
 	if(args == 0)
 	{
 		execClientCommand(client, "give health");
-		SetEntPropFloat(client, Prop_Send, "m_healthBuffer", 0.0);	
+		SetEntPropFloat(client, Prop_Send, "m_healthBuffer", 0.0);
 		return Plugin_Handled;
 	}
 	else if(args == 1)
@@ -1446,15 +1454,15 @@ public Action Command_Heal(client, args)
 		else
 		{
 			ShowActivity2(client, MSGTAG, " %t", "Give Health", target_name);
-			
+
 			for (new i = 0; i < target_count; i++)
 			{
 				new targetclient = target_list[i];
 				execClientCommand(targetclient, "give health");
-				SetEntPropFloat(targetclient, Prop_Send, "m_healthBuffer", 0.0);	
+				SetEntPropFloat(targetclient, Prop_Send, "m_healthBuffer", 0.0);
 			}
 			return Plugin_Handled;
-		}	
+		}
 	}
 	else
 	{
@@ -1495,14 +1503,14 @@ public Action Command_Points(client, args)
 				PlayerData[targetclient][iPlayerPoints] += amount;
 			}
 			return Plugin_Handled;
-		}	
+		}
 	}
 	else
 	{
 		ReplyToCommand(client, "%s %T", MSGTAG, "Usage sm_givepoints", LANG_SERVER);
 		return Plugin_Handled;
 	}
-}	
+}
 
 public Action Command_SPoints(client, args)
 {
@@ -1537,12 +1545,12 @@ public Action Command_SPoints(client, args)
 			}
 			return Plugin_Handled;
 		}
-	}	
+	}
 	else
 	{
 		ReplyToCommand(client, "%s %T", MSGTAG, "Usage sm_setpoints", LANG_SERVER, MSGTAG);
 		return Plugin_Handled;
-	}	
+	}
 }
 
 void execClientCommand(int iClientIndex, const char[] sCommand){
@@ -1566,7 +1574,7 @@ void RemoveFlags(){
 	SetCommandFlags("upgrade_add", flagsupgradeadd & ~FCVAR_CHEAT);
 	SetCommandFlags("director_force_panic_event", flagspanic & ~FCVAR_CHEAT);
 	return;
-}	
+}
 
 void AddFlags(){
 	int flagsgive = GetCommandFlags("give");
@@ -1579,7 +1587,7 @@ void AddFlags(){
 	SetCommandFlags("upgrade_add", flagsupgradeadd|FCVAR_CHEAT);
 	SetCommandFlags("director_force_panic_event", flagspanic|FCVAR_CHEAT);
 	return;
-}	
+}
 
 BuildBuyMenu(client)
 {
@@ -1601,7 +1609,7 @@ BuildBuyMenu(client)
 		{
 			Format(health, sizeof(health), "%T", "Health", LANG_SERVER);
 			AddMenuItem(menu, "g_HealthMenu", health);
-		}	
+		}
 		Format(title, sizeof(title), "%T", "Points Left", LANG_SERVER, PlayerData[client][iPlayerPoints]);
 		SetMenuTitle(menu, title);
 		DisplayMenu(menu, client, MENU_TIME_FOREVER);
@@ -1619,42 +1627,42 @@ BuildBuyMenu(client)
 		{
 			Format(suicide, sizeof(suicide), "%T", "Suicide", LANG_SERVER);
 			AddMenuItem(menu, "suicide", suicide);
-		}	
+		}
 		if(GetConVarInt(ItemCosts[CostBoomer]) > -1)
 		{
 			Format(boomer, sizeof(boomer), "%T", "Boomer", LANG_SERVER);
 			AddMenuItem(menu, "boomer", boomer);
-		}	
+		}
 		if(GetConVarInt(ItemCosts[CostSpitter]) > -1)
 		{
 			Format(spitter, sizeof(spitter), "%T", "Spitter", LANG_SERVER);
 			AddMenuItem(menu, "spitter", spitter);
-		}	
+		}
 		if(GetConVarInt(ItemCosts[CostSmoker]) > -1)
 		{
 			Format(smoker, sizeof(smoker), "%T", "Smoker", LANG_SERVER);
 			AddMenuItem(menu, "smoker", smoker);
-		}	
+		}
 		if(GetConVarInt(ItemCosts[CostHunter]) > -1)
 		{
 			Format(hunter, sizeof(hunter), "%T", "Hunter", LANG_SERVER);
 			AddMenuItem(menu, "hunter", hunter);
-		}	
+		}
 		if(GetConVarInt(ItemCosts[CostCharger]) > -1)
 		{
 			Format(charger, sizeof(charger), "%T", "Charger", LANG_SERVER);
 			AddMenuItem(menu, "charger", charger);
-		}	
+		}
 		if(GetConVarInt(ItemCosts[CostJockey]) > -1)
 		{
 			Format(jockey, sizeof(jockey), "%T", "Jockey", LANG_SERVER);
 			AddMenuItem(menu, "jockey", jockey);
-		}	
+		}
 		if(GetConVarInt(ItemCosts[CostTank]) > -1)
 		{
 			Format(tank, sizeof(tank), "%T", "Tank", LANG_SERVER);
 			AddMenuItem(menu, "tank", tank);
-		}	
+		}
 		if(StrEqual(MapName, "c6m1_riverbank", false) && GetConVarInt(ItemCosts[CostWitch]) > -1)
 		{
 			Format(witch_bride, sizeof(witch_bride), "%T", "Witch Bride", LANG_SERVER);
@@ -1664,27 +1672,27 @@ BuildBuyMenu(client)
 		{
 			Format(witch, sizeof(witch), "%T", "Witch", LANG_SERVER);
 			AddMenuItem(menu, "witch", witch);
-		}	
+		}
 		if(GetConVarInt(ItemCosts[CostHorde]) > -1)
 		{
 			Format(horde, sizeof(horde), "%T", "Horde", LANG_SERVER);
 			AddMenuItem(menu, "horde", horde);
-		}	
+		}
 		if(GetConVarInt(ItemCosts[CostMob]) > -1)
-		{	
+		{
 			Format(mob, sizeof(mob), "%T", "Mob", LANG_SERVER);
 			AddMenuItem(menu, "mob", mob);
-		}	
+		}
 		if(GetConVarInt(ItemCosts[CostUncommonMob]) > -1)
-		{	
+		{
 			Format(umob, sizeof(umob), "%T", "Uncommon Mob", LANG_SERVER);
 			AddMenuItem(menu, "uncommon_mob", umob);
-		}	
+		}
 		Format(title, sizeof(title), "%T", "Points Left", LANG_SERVER, PlayerData[client][iPlayerPoints]);
 		SetMenuTitle(menu, title);
 		DisplayMenu(menu, client, MENU_TIME_FOREVER);
 	}
-}	
+}
 
 BuildWeaponsMenu(client)
 {
@@ -1725,7 +1733,7 @@ BuildWeaponsMenu(client)
 	{
 		Format(misc, sizeof(misc), "%T", "Misc", LANG_SERVER);
 		AddMenuItem(menu, "g_MiscMenu", misc);
-	}	
+	}
 	Format(title, sizeof(title),"%T", "Points Left", LANG_SERVER, PlayerData[client][iPlayerPoints]);
 	SetMenuTitle(menu, title);
 	DisplayMenu(menu, client, MENU_TIME_FOREVER);
@@ -1737,7 +1745,7 @@ public TopMenu(Handle:menu, MenuAction:action, param1, param2)
 	{
 		case MenuAction_End:
 		{
-			CloseHandle(menu);	
+			CloseHandle(menu);
 		}
 		case MenuAction_Select:
 		{
@@ -1746,18 +1754,18 @@ public TopMenu(Handle:menu, MenuAction:action, param1, param2)
 			if(StrEqual(menu1, "g_WeaponsMenu"))
 			{
 				BuildWeaponsMenu(param1);
-			}	
+			}
 			else if(StrEqual(menu1, "g_HealthMenu"))
 			{
 				BuildHealthMenu(param1);
-			}	
+			}
 			else if(StrEqual(menu1, "g_UpgradesMenu"))
 			{
 				BuildUpgradesMenu(param1);
-			}	
+			}
 		}
 	}
-}	
+}
 
 public MenuHandler(Handle:menu, MenuAction:action, param1, param2)
 {
@@ -1765,15 +1773,15 @@ public MenuHandler(Handle:menu, MenuAction:action, param1, param2)
 	{
 		case MenuAction_End:
 		{
-			CloseHandle(menu);	
+			CloseHandle(menu);
 		}
 		case MenuAction_Cancel:
 		{
 			if (param2 == MenuCancel_ExitBack)
-			{	
+			{
 				BuildBuyMenu(param1);
 			}
-		}		
+		}
 		case MenuAction_Select:
 		{
 			new String:menu1[56];
@@ -1793,7 +1801,7 @@ public MenuHandler(Handle:menu, MenuAction:action, param1, param2)
 			else if(StrEqual(menu1, "g_ShotgunsMenu"))
 			{
 				BuildShotgunMenu(param1);
-			}	
+			}
 			else if(StrEqual(menu1, "g_SMGMenu"))
 			{
 				BuildSMGMenu(param1);
@@ -1801,11 +1809,11 @@ public MenuHandler(Handle:menu, MenuAction:action, param1, param2)
 			else if(StrEqual(menu1, "g_ThrowablesMenu"))
 			{
 				BuildThrowablesMenu(param1);
-			}	
+			}
 			else if(StrEqual(menu1, "g_MiscMenu"))
 			{
 				BuildMiscMenu(param1);
-			}	
+			}
 		}
 	}
 }
@@ -1819,62 +1827,62 @@ BuildMeleeMenu(client)
 		if(strlen(validmelee[i]) < 1)
 		{
 			continue;
-		}	
+		}
 		if(i == 0 && GetConVarInt(ItemCosts[CostCricketBat]) < 0)
 		{
 			continue;
-		}	
+		}
 		else if(i == 1 && GetConVarInt(ItemCosts[CostCrowBar]) < 0)
 		{
 			continue;
-		}	
+		}
 		else if(i == 2 && GetConVarInt(ItemCosts[CostBat]) < 0)
 		{
 			continue;
-		}	
+		}
 		else if(i == 3 && GetConVarInt(ItemCosts[CostGuitar]) < 0)
 		{
 			continue;
-		}	
+		}
 		else if(i == 4 && GetConVarInt(ItemCosts[CostFireAxe]) < 0)
 		{
 			continue;
-		}	
+		}
 		else if(i == 5 && GetConVarInt(ItemCosts[CostKatana]) < 0)
 		{
 			continue;
-		}	
+		}
 		else if(i == 6 && GetConVarInt(ItemCosts[CostKnife]) < 0)
 		{
 			continue;
-		}	
+		}
 		else if(i == 7 && GetConVarInt(ItemCosts[CostTonfa]) < 0)
 		{
 			continue;
-		}	
+		}
 		else if(i == 8 && GetConVarInt(ItemCosts[CostClub]) < 0)
 		{
 			continue;
-		}	
+		}
 		else if(i == 9 && GetConVarInt(ItemCosts[CostMachete]) < 0)
 		{
 			continue;
-		}	
+		}
 		else if(i == 10 && GetConVarInt(ItemCosts[CostPan]) < 0)
 		{
 			continue;
-		}		
+		}
 		else if(i == 11 && GetConVarInt(ItemCosts[CostKnife]) < 0)
 		{
 			continue;
-		}		
+		}
 		else if(i == 12 && GetConVarInt(ItemCosts[CostShield]) < 0)
 		{
 			continue;
-		}	
+		}
 		Format(container, sizeof(container), "%T", validmelee[i], LANG_SERVER);
 		AddMenuItem(menu, validmelee[i], container);
-	}	
+	}
 	Format(title, sizeof(title),"%T", "Points Left", LANG_SERVER, PlayerData[client][iPlayerPoints]);
 	SetMenuTitle(menu, title);
 	SetMenuExitBackButton(menu, true);
@@ -1948,7 +1956,7 @@ BuildRiflesMenu(client)
 
 BuildShotgunMenu(client)
 {
-	decl String:autoshotgun[40], String:shotgun_chrome[40], String:shotgun_spas[40], String:pumpshotgun[40], String:title[40]; 
+	decl String:autoshotgun[40], String:shotgun_chrome[40], String:shotgun_spas[40], String:pumpshotgun[40], String:title[40];
 	new Handle:menu = CreateMenu(MenuHandler_Shotguns);
 	if(GetConVarInt(ItemCosts[CostAuto]) > -1)
 	{
@@ -2003,7 +2011,7 @@ BuildSMGMenu(client)
 
 BuildHealthMenu(client)
 {
-	decl String:adrenaline[40], String:defibrillator[40], String:first_aid_kit[40], String:pain_pills[40], String:health[40], String:title[40]; 
+	decl String:adrenaline[40], String:defibrillator[40], String:first_aid_kit[40], String:pain_pills[40], String:health[40], String:title[40];
 	new Handle:menu = CreateMenu(MenuHandler_Health);
 	if(GetConVarInt(ItemCosts[CostHealthKit]) > -1)
 	{
@@ -2107,7 +2115,7 @@ BuildMiscMenu(client)
 	{
 		Format(gascan, sizeof(gascan), "%T", "Gascan", LANG_SERVER);
 		AddMenuItem(menu, "weapon_gascan", gascan);
-	}	
+	}
 	if(GetConVarInt(ItemCosts[CostOxygen]) > -1)
 	{
 		Format(oxygentank, sizeof(oxygentank), "%T", "Oxygen Tank", LANG_SERVER);
@@ -2193,7 +2201,7 @@ public MenuHandler_Melee(Handle:menu, MenuAction:action, param1, param2)
 			{
 				strcopy(PlayerData[param1][sItemName], 64, "give cricket_bat");
 				PlayerData[param1][iItemCost] = GetConVarInt(ItemCosts[CostCricketBat]);
-			}		
+			}
 			else if(StrEqual(item1, "baseball_bat", false))
 			{
 				strcopy(PlayerData[param1][sItemName], 64, "give baseball_bat");
@@ -2252,7 +2260,7 @@ public MenuHandler_Melee(Handle:menu, MenuAction:action, param1, param2)
 			DisplayConfirmMenuMelee(param1);
 		}
 	}
-}	
+}
 
 public MenuHandler_SMG(Handle:menu, MenuAction:action, param1, param2)
 {
@@ -2272,7 +2280,7 @@ public MenuHandler_SMG(Handle:menu, MenuAction:action, param1, param2)
 		case MenuAction_Select:
 		{
 			new String:item1[56];
-			GetMenuItem(menu, param2, item1, sizeof(item1));			
+			GetMenuItem(menu, param2, item1, sizeof(item1));
 			if(StrEqual(item1, "weapon_smg", false))
 			{
 				strcopy(PlayerData[param1][sItemName], 64, "give smg");
@@ -2291,8 +2299,8 @@ public MenuHandler_SMG(Handle:menu, MenuAction:action, param1, param2)
 			DisplayConfirmMenuSMG(param1);
 		}
 	}
-}	
-			
+}
+
 public MenuHandler_Rifles(Handle:menu, MenuAction:action, param1, param2)
 {
 	switch(action)
@@ -2311,7 +2319,7 @@ public MenuHandler_Rifles(Handle:menu, MenuAction:action, param1, param2)
 		case MenuAction_Select:
 		{
 			new String:item1[56];
-			GetMenuItem(menu, param2, item1, sizeof(item1));			
+			GetMenuItem(menu, param2, item1, sizeof(item1));
 			if(StrEqual(item1, "weapon_rifle", false))
 			{
 				strcopy(PlayerData[param1][sItemName], 64, "give weapon_rifle");
@@ -2340,8 +2348,8 @@ public MenuHandler_Rifles(Handle:menu, MenuAction:action, param1, param2)
 			DisplayConfirmMenuRifles(param1);
 		}
 	}
-}	
-			
+}
+
 public MenuHandler_Snipers(Handle:menu, MenuAction:action, param1, param2)
 {
 	switch(action)
@@ -2360,7 +2368,7 @@ public MenuHandler_Snipers(Handle:menu, MenuAction:action, param1, param2)
 		case MenuAction_Select:
 		{
 			new String:item1[56];
-			GetMenuItem(menu, param2, item1, sizeof(item1));			
+			GetMenuItem(menu, param2, item1, sizeof(item1));
 			if(StrEqual(item1, "weapon_hunting_rifle", false))
 			{
 				strcopy(PlayerData[param1][sItemName], 64, "give hunting_rifle");
@@ -2384,8 +2392,8 @@ public MenuHandler_Snipers(Handle:menu, MenuAction:action, param1, param2)
 			DisplayConfirmMenuSnipers(param1);
 		}
 	}
-}	
-			
+}
+
 public MenuHandler_Shotguns(Handle:menu, MenuAction:action, param1, param2)
 {
 	switch(action)
@@ -2404,7 +2412,7 @@ public MenuHandler_Shotguns(Handle:menu, MenuAction:action, param1, param2)
 		case MenuAction_Select:
 		{
 			new String:item1[56];
-			GetMenuItem(menu, param2, item1, sizeof(item1));			
+			GetMenuItem(menu, param2, item1, sizeof(item1));
 			if(StrEqual(item1, "weapon_shotgun_chrome", false))
 			{
 				strcopy(PlayerData[param1][sItemName], 64, "give shotgun_chrome");
@@ -2428,8 +2436,8 @@ public MenuHandler_Shotguns(Handle:menu, MenuAction:action, param1, param2)
 			DisplayConfirmMenuShotguns(param1);
 		}
 	}
-}	
-			
+}
+
 public MenuHandler_Throwables(Handle:menu, MenuAction:action, param1, param2)
 {
 	switch(action)
@@ -2448,7 +2456,7 @@ public MenuHandler_Throwables(Handle:menu, MenuAction:action, param1, param2)
 		case MenuAction_Select:
 		{
 			new String:item1[56];
-			GetMenuItem(menu, param2, item1, sizeof(item1));			
+			GetMenuItem(menu, param2, item1, sizeof(item1));
 			if(StrEqual(item1, "weapon_molotov", false))
 			{
 				strcopy(PlayerData[param1][sItemName], 64, "give molotov");
@@ -2467,8 +2475,8 @@ public MenuHandler_Throwables(Handle:menu, MenuAction:action, param1, param2)
 			DisplayConfirmMenuThrow(param1);
 		}
 	}
-}	
-			
+}
+
 public MenuHandler_Misc(Handle:menu, MenuAction:action, param1, param2)
 {
 	switch(action)
@@ -2606,7 +2614,7 @@ public MenuHandler_Upgrades(Handle:menu, MenuAction:action, param1, param2)
 			{
 				BuildBuyMenu(param1);
 			}
-		}	
+		}
 		case MenuAction_Select:
 		{
 			new String:item1[56];
@@ -2644,7 +2652,7 @@ public MenuHandler_Upgrades(Handle:menu, MenuAction:action, param1, param2)
 			DisplayConfirmMenuUpgrades(param1);
 		}
 	}
-}	
+}
 
 public InfectedMenu(Handle:hMenu, MenuAction:action, iClientIndex, iPosition)
 {
@@ -2670,7 +2678,7 @@ public InfectedMenu(Handle:hMenu, MenuAction:action, iClientIndex, iPosition)
 			{
 				strcopy(PlayerData[iClientIndex][sItemName], 64, "suicide");
 				PlayerData[iClientIndex][iItemCost] = GetConVarInt(ItemCosts[CostSuicide]);
-			}		
+			}
 			else if (StrEqual(sItem, "boomer", false))
 			{
 				strcopy(PlayerData[iClientIndex][sItemName], 64, "z_spawn_old boomer auto");
@@ -2737,7 +2745,7 @@ public InfectedMenu(Handle:hMenu, MenuAction:action, iClientIndex, iPosition)
 }
 
 public OnEntityCreated(entity, const String:classname[])
-{	
+{
 	if(StrEqual(classname, "infected", false) && CounterData[iUCommonLeft] > 0)
 	{
 		new rand = GetRandomInt(1, 6);
@@ -2767,9 +2775,9 @@ public OnEntityCreated(entity, const String:classname[])
 			{
 				SetEntityModel(entity, "models/infected/common_male_fallen_survivor.mdl");
 			}
-		}	
+		}
 		CounterData[iUCommonLeft]--;
-	}	
+	}
 }
 
 DisplayConfirmMenuMelee(param1)
@@ -2896,7 +2904,7 @@ DisplayConfirmMenuUpgrades(param1)
 	SetMenuTitle(menu, title);
 	SetMenuExitBackButton(menu, true);
 	DisplayMenu(menu, param1, MENU_TIME_FOREVER);
-}	
+}
 
 DisplayConfirmMenuI(param1)
 {
@@ -2910,7 +2918,7 @@ DisplayConfirmMenuI(param1)
 	SetMenuTitle(menu, title);
 	SetMenuExitBackButton(menu, true);
 	DisplayMenu(menu, param1, MENU_TIME_FOREVER);
-}	
+}
 
 public MenuHandler_ConfirmMelee(Handle:menu, MenuAction:action, param1, param2)
 {
@@ -2947,11 +2955,11 @@ public MenuHandler_ConfirmMelee(Handle:menu, MenuAction:action, param1, param2)
 					PlayerData[param1][iBoughtCost] = PlayerData[param1][iItemCost];
 					removePoints(param1, PlayerData[param1][iItemCost]);
 					execClientCommand(param1, PlayerData[param1][sItemName]);
-				}	
-			}	
+				}
+			}
 		}
 	}
-}	
+}
 
 public MenuHandler_ConfirmRifles(Handle:menu, MenuAction:action, param1, param2)
 {
@@ -2988,11 +2996,11 @@ public MenuHandler_ConfirmRifles(Handle:menu, MenuAction:action, param1, param2)
 					PlayerData[param1][iBoughtCost] = PlayerData[param1][iItemCost];
 					removePoints(param1, PlayerData[param1][iItemCost]);
 					execClientCommand(param1, PlayerData[param1][sItemName]);
-				}	
+				}
 			}
 		}
 	}
-}	
+}
 
 public MenuHandler_ConfirmSniper(Handle:menu, MenuAction:action, param1, param2)
 {
@@ -3029,11 +3037,11 @@ public MenuHandler_ConfirmSniper(Handle:menu, MenuAction:action, param1, param2)
 					PlayerData[param1][iBoughtCost] = PlayerData[param1][iItemCost];
 					removePoints(param1, PlayerData[param1][iItemCost]);
 					execClientCommand(param1, PlayerData[param1][sItemName]);
-				}	
+				}
 			}
 		}
 	}
-}	
+}
 
 public MenuHandler_ConfirmSMG(Handle:menu, MenuAction:action, param1, param2)
 {
@@ -3070,11 +3078,11 @@ public MenuHandler_ConfirmSMG(Handle:menu, MenuAction:action, param1, param2)
 					PlayerData[param1][iBoughtCost] = PlayerData[param1][iItemCost];
 					removePoints(param1, PlayerData[param1][iItemCost]);
 					execClientCommand(param1, PlayerData[param1][sItemName]);
-				}	
+				}
 			}
 		}
 	}
-}	
+}
 
 public MenuHandler_ConfirmShotguns(Handle:menu, MenuAction:action, param1, param2)
 {
@@ -3111,11 +3119,11 @@ public MenuHandler_ConfirmShotguns(Handle:menu, MenuAction:action, param1, param
 					PlayerData[param1][iBoughtCost] = PlayerData[param1][iItemCost];
 					removePoints(param1, PlayerData[param1][iItemCost]);
 					execClientCommand(param1, PlayerData[param1][sItemName]);
-				}	
+				}
 			}
 		}
 	}
-}	
+}
 
 public MenuHandler_ConfirmThrow(Handle:menu, MenuAction:action, param1, param2)
 {
@@ -3152,11 +3160,11 @@ public MenuHandler_ConfirmThrow(Handle:menu, MenuAction:action, param1, param2)
 					PlayerData[param1][iBoughtCost] = PlayerData[param1][iItemCost];
 					removePoints(param1, PlayerData[param1][iItemCost]);
 					execClientCommand(param1, PlayerData[param1][sItemName]);
-				}	
+				}
 			}
 		}
 	}
-}	
+}
 
 public MenuHandler_ConfirmMisc(Handle:menu, MenuAction:action, param1, param2)
 {
@@ -3193,11 +3201,11 @@ public MenuHandler_ConfirmMisc(Handle:menu, MenuAction:action, param1, param2)
 					PlayerData[param1][iBoughtCost] = PlayerData[param1][iItemCost];
 					removePoints(param1, PlayerData[param1][iItemCost]);
 					execClientCommand(param1, PlayerData[param1][sItemName]);
-				}	
+				}
 			}
 		}
 	}
-}	
+}
 
 public MenuHandler_ConfirmHealth(Handle:menu, MenuAction:action, param1, param2)
 {
@@ -3236,19 +3244,19 @@ public MenuHandler_ConfirmHealth(Handle:menu, MenuAction:action, param1, param2)
 						removePoints(param1, PlayerData[param1][iItemCost]);
 						execClientCommand(param1, PlayerData[param1][sItemName]);
 						SetEntPropFloat(param1, Prop_Send, "m_healthBuffer", 0.0);
-					}	
+					}
 					else
-					{	
+					{
 						strcopy(PlayerData[param1][sBought], 64, PlayerData[param1][sItemName]);
 						PlayerData[param1][iBoughtCost] = PlayerData[param1][iItemCost];
 						removePoints(param1, PlayerData[param1][iItemCost]);
 						execClientCommand(param1, PlayerData[param1][sItemName]);
 					}
-				}	
+				}
 			}
 		}
 	}
-}	
+}
 
 public bool:IsCarryingWeapon(iClientIndex){
 	new iWeapon = GetPlayerWeaponSlot(iClientIndex, 0);
@@ -3333,7 +3341,7 @@ public MenuHandler_ConfirmUpgrades(Handle:menu, MenuAction:action, param1, param
 			}
 		}
 	}
-}	
+}
 
 public MenuHandler_ConfirmI(Handle:menu, MenuAction:action, param1, param2)
 {
@@ -3362,7 +3370,7 @@ public MenuHandler_ConfirmI(Handle:menu, MenuAction:action, param1, param2)
 			{
 				if(!HasEnoughPoints(param1, PlayerData[param1][iItemCost]))
 					return;
-				
+
 				if(StrEqual(PlayerData[param1][sItemName], "suicide", false))
 				{
 					performSuicide(param1, PlayerData[param1][iItemCost]);
@@ -3371,14 +3379,14 @@ public MenuHandler_ConfirmI(Handle:menu, MenuAction:action, param1, param2)
 				else if(StrEqual(PlayerData[param1][sItemName], "z_spawn_old mob", false))
 				{
 					CounterData[iUCommonLeft] += GetConVarInt(FindConVar("z_common_limit"));
-				}	
+				}
 				else if(StrEqual(PlayerData[param1][sItemName], "z_spawn_old tank auto", false))
 				{
 					if(CounterData[iTanksSpawned] == GetConVarInt(PluginSettings[hTankLimit]))
 					{
 						PrintToChat(param1,  "%T", "Tank Limit", LANG_SERVER);
 						return;
-					}	
+					}
 					CounterData[iTanksSpawned]++;
 				}
 				else if(StrEqual(PlayerData[param1][sItemName], "z_spawn_old witch auto", false) || StrEqual(PlayerData[param1][sItemName], "z_spawn_old witch_bride auto", false))
@@ -3395,7 +3403,7 @@ public MenuHandler_ConfirmI(Handle:menu, MenuAction:action, param1, param2)
 					if(IsPlayerAlive(param1) || IsPlayerGhost(param1))
 					{
 						return;
-					}	
+					}
 					new bool:resetGhost[MaxClients+1], bool:resetAlive[MaxClients+1], bool:resetLifeState[MaxClients+1];
 					for(new i=1;i<=MaxClients;i++)
 					{
@@ -3403,7 +3411,7 @@ public MenuHandler_ConfirmI(Handle:menu, MenuAction:action, param1, param2)
 						{
 							continue;
 						}
-						
+
 						if(IsPlayerGhost(i))
 						{
 							resetGhost[i] = true;
@@ -3415,20 +3423,20 @@ public MenuHandler_ConfirmI(Handle:menu, MenuAction:action, param1, param2)
 						{
 							resetLifeState[i] = true;
 							SetPlayerLifeState(i, false);
-						}	
+						}
 					}
 
 					execClientCommand(param1, PlayerData[param1][sItemName]);
-					
+
 					new maxretry = GetConVarInt(PluginSettings[hSpawnAttempts]);
 					for(new i;i<maxretry;i++)
 					{
 						if(!IsPlayerAlive(param1))
 						{
 							execClientCommand(param1, PlayerData[param1][sItemName]);
-						}	
+						}
 					}
-					
+
 					if(IsPlayerAlive(param1))
 					{
 						strcopy(PlayerData[param1][sBought], 64, PlayerData[param1][sItemName]);
@@ -3438,8 +3446,8 @@ public MenuHandler_ConfirmI(Handle:menu, MenuAction:action, param1, param2)
 					else
 					{
 						PrintToChat(param1, "%s %T", MSGTAG, "Spawn Failed", param1);
-					}	
-					
+					}
+
 
 					for(new i=1;i<=MaxClients;i++)
 					{
@@ -3448,7 +3456,7 @@ public MenuHandler_ConfirmI(Handle:menu, MenuAction:action, param1, param2)
 						if (resetLifeState[i]) SetPlayerLifeState(i, true);
 					}
 					return;
-				}	
+				}
 				strcopy(PlayerData[param1][sBought], 64, PlayerData[param1][sItemName]);
 				PlayerData[param1][iBoughtCost] = PlayerData[param1][iItemCost];
 				removePoints(param1, PlayerData[param1][iItemCost]);

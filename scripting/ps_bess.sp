@@ -9,7 +9,7 @@
 
 #define MSGTAG "\x04[PS]\x01"
 
-public Plugin:myinfo = 
+public Plugin:myinfo =
 {
 	name = "[PS] Buy Extended Support Structure",
 	author = "McFlurry && evilmaniac",
@@ -76,7 +76,7 @@ public OnAllPluginsLoaded(){
 				ModuleSettings[bModuleLoaded] = true;
 				return;
 			}
-		}	
+		}
 		else
 			SetFailState("[PS] Outdated version of Points System installed.");
 	}
@@ -95,12 +95,12 @@ public OnPluginEnd(){
 public OnPSUnloaded(){
 	ModuleSettings[bModuleLoaded] = false;
 	return;
-}	
+}
 
 public OnConfigsExecuted()
 {
 	UpdateBuyTrie();
-}	
+}
 
 public SetUpBuyTrie()
 {
@@ -242,7 +242,7 @@ public SetUpBuyTrie()
 	SetTrieValue(h_Trie, "mobcost", GetConVarInt(FindConVar("l4d2_points_mob")));
 	SetTrieString(h_Trie, "umob", "z_spawn_old mob");
 	SetTrieValue(h_Trie, "umobcost", GetConVarInt(FindConVar("l4d2_points_umob")));
-}	
+}
 
 public UpdateBuyTrie()
 {
@@ -358,7 +358,7 @@ public Action:Cmd_Buy(iClientIndex, iNumArgs)
 	if(!IsPlayerAlive(iClientIndex)){
 		ReplyToCommand(iClientIndex, "[PS] Must Be Alive To Buy Items!");
 		return Plugin_Continue;
-	}	
+	}
 
 	new String:arg[50];
 	GetCmdArg(1, arg, sizeof(arg));
@@ -390,9 +390,9 @@ public Action:Cmd_Buy(iClientIndex, iNumArgs)
 				if(checkDisabled(iCost))
 					return Plugin_Continue;
 
-				performHeal(iClientIndex, iCost);	
+				performHeal(iClientIndex, iCost);
 				return Plugin_Continue;
-			}	
+			}
 			else if(GetClientTeam(iClientIndex) == 2){// If player is Survivor
 				iCost = GetConVarInt(FindConVar("l4d2_points_survivor_heal"));
 				if(checkDisabled(iCost))
@@ -400,7 +400,7 @@ public Action:Cmd_Buy(iClientIndex, iNumArgs)
 
 				performHeal(iClientIndex, iCost);
 				return Plugin_Continue;
-			}	
+			}
 		}
 		if(StrEqual(arg, "kill", false) && GetClientTeam(iClientIndex) == 3){
 			// Get Cost
@@ -429,9 +429,9 @@ public Action:Cmd_Buy(iClientIndex, iNumArgs)
 
 			if(checkDisabled(iCost) || iCost == -2)
 				return Plugin_Continue;
-			else 
+			else
 				performPurchase(iClientIndex, iCost, argval);
-		}	
+		}
 	}
 	return Plugin_Continue;
 }
@@ -508,7 +508,7 @@ public performHeal(iClientIndex, iCost){
 		}
 	}
 	return;
-}	
+}
 
 public bool:IsClientTank(iClientIndex){
 	if(iClientIndex > 0){
@@ -547,8 +547,8 @@ stock HandleUMob(iClientIndex)
 	{
 		PS_SetBoughtCost(iClientIndex, PS_GetBoughtCost(iClientIndex));
 		ReplyToCommand(iClientIndex, "%s %T", MSGTAG, "Insufficient Funds", LANG_SERVER);
-	}	
-}	
+	}
+}
 
 public execClientCommand(iClientIndex, const String:sCommand[]){
 	RemoveFlags();
@@ -568,7 +568,7 @@ RemoveFlags()
 	SetCommandFlags("upgrade_add", flagsupgradeadd & ~FCVAR_CHEAT);
 	SetCommandFlags("director_force_panic_event", flagspanic & ~FCVAR_CHEAT);
 	return;
-}	
+}
 
 AddFlags()
 {
