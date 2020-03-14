@@ -1,0 +1,38 @@
+# This is a sample build configuration for Other.
+# Check our guides at https://confluence.atlassian.com/x/5Q4SMw for more examples.
+# Only use spaces to indent your .yml configuration.
+# -----
+# You can specify a custom docker image from Docker Hub as your build environment.
+# image: atlassian/default-image:latest
+
+pipelines:
+  default:
+    - step:
+        name: Build SourcePawn Scripts
+        image: debian:jessie
+        caches:
+          - sourcemod
+        script:
+          - apt-get update && apt-get install -y lib32stdc++6 wget
+          - bash getbuildtools.sh
+          - bash addons/sourcemod/scripting/compile.sh
+        artifacts:
+          - addons/sourcemod/scripting/compiled/*.smx
+          - addons/sourcemod/translations/*.txt
+    - step:
+        name: Generate Payload
+        image: debian:jessie
+        script:
+          - tar -zcvf compiled.tar.gz addons/sourcemod/scripting/compiled/*.smx  addons/sourcemod/translations/*.txt
+        artifacts:
+          - compiled.tar.gz
+    - step:
+        name: Deploy to Server
+        trigger: manual
+        deployment: production
+        script:
+          - scp -P 1981 compiled.tar.gz emania@wa.evilmania.net:/home/emania/
+
+definitions:
+  caches:
+    sourcemod: dependencies
