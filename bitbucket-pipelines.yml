@@ -16,7 +16,7 @@ pipelines:
           - apt-get update && apt-get install -y lib32stdc++6 wget
           - bash getbuildtools.sh
           - cp -rv scripting/* addons/sourcemod/scripting/
-          - cp -rv translations/* addons/sourcemod/translations/
+          - mkdir -p addons/sourcemod/translations && cp -rv translations/* addons/sourcemod/translations/
           - bash addons/sourcemod/scripting/compile.sh
         artifacts:
           - addons/sourcemod/scripting/compiled/*.smx
