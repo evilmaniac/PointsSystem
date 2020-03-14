@@ -26,12 +26,6 @@ pipelines:
           - tar -zcvf compiled.tar.gz addons/sourcemod/scripting/compiled/*.smx  addons/sourcemod/translations/*.txt
         artifacts:
           - compiled.tar.gz
-    - step:
-        name: Deploy to Server
-        trigger: manual
-        deployment: production
-        script:
-          - scp -P 1981 compiled.tar.gz emania@wa.evilmania.net:/home/emania/
 
 definitions:
   caches:
