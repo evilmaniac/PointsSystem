@@ -4,7 +4,7 @@
 DOWNLOAD_LOCATION="dependencies"
 
 # Sourcemod download version & URL
-SOURCEMOD_VERSION="1.9"
+SOURCEMOD_VERSION="1.10"
 SOURCEMOD_BASE_DOWNLOAD_URL="https://sm.alliedmods.net/smdrop/"
 SOURCEMOD_LATEST="sourcemod-latest-linux"
 
