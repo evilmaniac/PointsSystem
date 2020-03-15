@@ -9,7 +9,7 @@ pipelines:
   default:
     - step:
         name: Build SourcePawn Scripts
-        image: debian:jessie
+        image: debian:buster
         caches:
           - sourcemod
         script:
@@ -23,7 +23,7 @@ pipelines:
           - addons/sourcemod/translations/*.txt
     - step:
         name: Generate Payload
-        image: debian:jessie
+        image: debian:buster
         script:
           - tar -zcvf compiled.tar.gz addons/sourcemod/scripting/compiled/*.smx  addons/sourcemod/translations/*.txt
         artifacts:
