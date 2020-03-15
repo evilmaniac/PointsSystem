@@ -1,6 +1,6 @@
 #!/bin/bash
 
-CACHE_DIR="addons"
+CACHE_DIR="addons/sourcemod"
 
 # Where dependencies will be downloaded
 DOWNLOAD_LOCATION="dependencies"
@@ -15,7 +15,6 @@ SOURCEMOD_LATEST_RELEASE_NAME=$(wget -O- -q $SOURCEMOD_DOWNLOAD_DIR/$SOURCEMOD_L
 SOURCEMOD_DOWNLOAD_URL=$SOURCEMOD_DOWNLOAD_DIR/$SOURCEMOD_LATEST_RELEASE_NAME
 
 if [ -d $CACHE_DIR ]; then
-    ls -la
     echo "SourceMod available. Download not required"
 else
     wget -P $DOWNLOAD_LOCATION $SOURCEMOD_DOWNLOAD_URL
